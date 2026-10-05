@@ -1,0 +1,20 @@
+{
+  "name": "builder-blueprints",
+  "interface": {
+    "displayName": "Builder Blueprints"
+  },
+  "plugins": [
+    {
+      "name": "builder-blueprints",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
