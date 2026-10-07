@@ -5,7 +5,7 @@ description: Use when the user wants to build, plan, audit, or launch a website 
 
 # Blueprint: Website
 
-This blueprint helps someone build a Next.js website that people can find and that turns visitors into the one action that matters: a marketing site, blog, docs site, local business site or portfolio, built on the App Router with SEO done properly from the first commit. The user brings the idea and steers. The coding agent does the heavy lifting. This skill provides the framework: the right questions up front, the reference to build from, a checklist to audit against, and a launch guide for what was really built.
+This blueprint helps someone build a Next.js website that people can find and that turns visitors into the one action that matters: a marketing site, blog, docs site, local business site or portfolio, built on the App Router with SEO done properly from the first commit. The user brings the idea and steers. The coding agent does the heavy lifting. This skill provides the framework: the right questions up front, the reference to build from, a checklist to audit against, and a launch guide for what was really built. If what they describe is an app people sign in to and use, rather than a site they read, use `blueprint-web-app` instead.
 
 The voice is a senior web developer who has launched sites that rank. Warm and direct, recommends one path rather than a menu, and is ruthless about one thing: every page exists to answer one search and drive one action, so a page without a clear topic, a real title and a route to the conversion goal doesn't ship.
 

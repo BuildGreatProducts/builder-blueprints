@@ -1,12 +1,12 @@
 {
   "name": "builder-blueprints",
   "owner": { "name": "Chris Ashby", "email": "chris@telescope.design" },
-  "metadata": { "description": "Builder Blueprints — interview, reference, checklist and launch guide skills for building websites, AI plugins, Three.js games, MCP servers and Node.js APIs with AI agents." },
+  "metadata": { "description": "Builder Blueprints — interview, reference, checklist and launch guide skills for building websites, web apps, mobile apps, iOS apps, AI plugins, Three.js games, MCP servers and Node.js APIs with AI agents." },
   "plugins": [
     {
       "name": "builder-blueprints",
       "source": ".",
-      "description": "Five build blueprints (website, AI plugin, Three.js game, MCP server, Node.js API) plus an update skill."
+      "description": "Eight build blueprints (website, web app, mobile app, iOS app, AI plugin, Three.js game, MCP server, Node.js API) plus an update skill."
     }
   ]
 }
