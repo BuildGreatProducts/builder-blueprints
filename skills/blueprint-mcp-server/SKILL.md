@@ -112,7 +112,7 @@ Read `REFERENCE.md` before writing any server code. Then let the user steer: bui
 
 While building:
 
-- The protocol and SDKs changed substantially recently. Check the live docs before relying on any API you aren't sure of: the SDK docs and spec links at the top of `REFERENCE.md`, or Context7 if available. Never write code from memory of the older SDK generation.
+- The protocol and SDKs change often. Check the live docs before relying on any API you aren't sure of: the SDK docs and spec links at the top of `REFERENCE.md`, or Context7 if available. Never write code from memory of the older SDK generation.
 - Write each tool's name, description and input schema first, from the brief, before writing its handler. Read them back as if you were the model: would you know when to call it and what to pass?
 - Build one tool end to end (schema, handler, errors, annotations) and test it before adding the next.
 - After each tool, test it: list and call it with the MCP Inspector, then connect the server to Claude Code in a fresh session, ask for the job in the user's own words without naming the tool, and confirm the right tool is chosen with sensible arguments. If it isn't, fix the name or description, not the handler.

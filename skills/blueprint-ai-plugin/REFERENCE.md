@@ -1,6 +1,6 @@
 # AI Plugin — Reference
 
-> Last verified: 2026-10. Plugin formats move quickly. Before relying on a field, flag, or command, check the live docs: https://code.claude.com/docs/en/plugins-reference, https://code.claude.com/docs/en/skills, https://agentskills.io/specification.
+> **Staying current:** plugin and skill formats move quickly. Before relying on a manifest field, frontmatter key, flag or command, check the installed tool's version (`claude --version`, `codex --version`, etc.) and read the live docs: https://code.claude.com/docs/en/plugins-reference, https://code.claude.com/docs/en/skills, https://agentskills.io/specification (or Context7). `claude plugin validate .` is the source of truth for the Claude Code format. When this reference and the live docs disagree, the docs win.
 
 ## Contents
 1. Default approach
@@ -120,7 +120,7 @@ description: Does X and Y. Use when the user wants …, mentions …, or asks to
   - an exact script for fragile steps ("Run exactly: `python scripts/x.py`")
 - **Workflows:** numbered steps, a validate → fix → repeat loop for anything quality-critical, and a clear "done" definition.
 - **One default, not a menu.** Give an escape hatch only for a real alternative case.
-- **Nothing time-sensitive in SKILL.md.** Keep versions in a reference file with a "Last verified" date, and put deprecated approaches under "patterns to avoid".
+- **Keep skills evergreen.** No version numbers or dates in the skill. State guiding principles and the current conventions, and tell the agent to check the installed version and the live docs before relying on anything that changes between releases. Time-sensitive detail never goes in SKILL.md; put deprecated approaches under "patterns to avoid".
 - **Consistent terminology.** Pick one word per concept and stick to it.
 - **Scripts:** handle errors inside the script, document every constant, list dependencies, and use forward-slash paths.
 - **MCP tools:** refer to them fully qualified (`ServerName:tool_name`).
@@ -162,7 +162,7 @@ Test it: in a fresh session, type the user's own phrasings without naming the sk
 The SKILL.md format is shared, so the same `skills/` folder works across tools. Each tool has its own manifest folder pointing at it:
 
 - **Codex:**
-  - A root `plugin.json` in the portable Agent Plugins format: `"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"`, plus `name`, `version`, `description` and the usual metadata.
+  - A root `plugin.json` in the portable Agent Plugins format: `"$schema"` set to the current schema URL from agent-plugins.org (copy it from the live docs rather than from memory), plus `name`, `version`, `description` and the usual metadata.
   - Skills are found automatically in the root `skills/` folder.
   - Codex-only settings go under `extensions.com.openai`, e.g. an `interface` block with `displayName`, `shortDescription`, `longDescription`, `developerName`, `category`, `capabilities`, `websiteURL`, `defaultPrompt`.
   - The marketplace file is `.agents/plugins/marketplace.json`, whose entries take `source: { "source": "local", "path": "." }` and a `policy` block.
@@ -184,7 +184,7 @@ Users who want just one skill can copy its folder into `~/.claude/skills/` (Clau
 - `claude --plugin-dir .` loads the plugin for one session without installing it. Use `/reload-plugins` after edits.
 - **Trigger test:** in a fresh session, type 2–3 natural phrasings per skill without naming it, and confirm it loads.
 - **Behaviour test:** run each skill on a realistic task and check the output files and steps.
-- **Evals (recommended):** `claude plugin eval` (recent Claude Code versions) runs cases in `evals/<case>/prompt.md` with graders, with and without the plugin, and reports the difference. Write about three cases per important skill.
+- **Evals (recommended):** `claude plugin eval` (confirm your installed Claude Code has it with `claude plugin --help`) runs cases in `evals/<case>/prompt.md` with graders, with and without the plugin, and reports the difference. Write about three cases per important skill.
 - **Install test:** `claude plugin marketplace add ./` then `claude plugin install <name>@<marketplace>` in a scratch folder, exactly as a user would.
 
 ## 10. Patterns to avoid
@@ -194,7 +194,7 @@ Users who want just one skill can copy its folder into `~/.claude/skills/` (Clau
 - Many tiny overlapping skills that compete for the same phrases.
 - Giant SKILL.md files that paste whole API docs. Link to the docs or put them in a reference file.
 - Reference chains (SKILL → A → B → C). Keep everything one level deep.
-- Hard-coded versions and dates in SKILL.md.
+- Hard-coded tool versions and dates in skills. State the principle and point to the live docs instead.
 - Secrets in files, examples or `.mcp.json`. Use `userConfig` with `sensitive: true` or environment variables.
 - Paths with `..`, Windows backslashes, or absolute paths to your own machine.
 - Changing files without bumping `version` (users never get the update).

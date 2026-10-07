@@ -1,9 +1,9 @@
 # Node API — Reference
 
-> Last verified: 2026-10. Node and its libraries move quickly. Before relying on a function, option or flag, check the live docs (or Context7): https://nodejs.org/api/, https://hono.dev/docs, https://zod.dev, https://orm.drizzle.team/docs, https://www.better-auth.com/docs, https://owasp.org/API-Security/.
+> **Staying current.** This reference names tools and conventions, not versions. Use the current Active LTS of Node and start new projects on the latest stable release of each library. Before writing code, check what's installed (`node --version`, `package.json`, `npm view <pkg> version`). Before relying on a function, option or flag, read the live docs (or Context7): https://nodejs.org/api/, https://hono.dev/docs, https://zod.dev, https://orm.drizzle.team/docs, https://www.better-auth.com/docs, https://owasp.org/API-Security/. When this reference and the installed version's docs disagree, the docs win. Prefer stable releases over beta, alpha or release-candidate tags.
 
 ## Contents
-1. Default stack and versions
+1. Default stack
 2. Runtime: Node and TypeScript
 3. Project layout
 4. Framework: Hono (and when not)
@@ -23,32 +23,33 @@
 
 ---
 
-## 1. Default stack and versions
+## 1. Default stack
 
 One default. Change a line only when the brief clearly calls for it.
 
-| Concern | Default | Version (Oct 2026) | Use instead when… |
+| Concern | Default | Packages | Use instead when… |
 |---|---|---|---|
-| Runtime | Node, Active LTS | **24** (24.12+). Node **26** becomes LTS on 28 Oct 2026: move to it then. Node 24 enters maintenance on 20 Oct 2026 and is supported until 30 Apr 2028. | — |
-| Language | TypeScript, run directly by Node (type stripping) | `typescript` 7.0 for `tsc --noEmit` | — |
-| Framework | Hono + `@hono/node-server` | `hono` 4.13, `@hono/node-server` 2.x | Fastify 5.12 (v6 is in alpha) for Node-only, long-running, very high-throughput servers. Express 5.2 only for existing Express code. NestJS 12 only for large teams already standardised on it. |
-| Validation + OpenAPI | Zod + `@hono/zod-openapi` | `zod` 4.6, `@hono/zod-openapi` 1.6 (requires Zod 4) | — |
-| Docs page | Scalar | `@scalar/hono-api-reference` 0.12 | — |
-| Database | Postgres + Drizzle ORM, SQL migrations | `drizzle-orm` 0.45, `drizzle-kit` 0.31 (1.0 is in release candidate; stay on `latest`), `pg` 8 | Prisma 7 (8 is in release candidate) if the team already knows it. |
-| User auth | Better Auth | `better-auth` 1.7 | Auth.js is now maintained by the Better Auth team; don't start new projects on it. |
-| API keys | Better Auth API key plugin | `@better-auth/api-key` 1.7 | — |
-| JWTs (only if needed) | `jose` | 6.2 | — |
-| Rate limiting | `hono-rate-limiter` with a Redis store (Upstash) | `hono-rate-limiter` 0.5, `@upstash/redis` 1.39 | — |
-| Logging | pino (JSON to stdout) | `pino` 10 | — |
-| Errors and tracing | Sentry (built on OpenTelemetry) | `@sentry/node` / `@sentry/hono` 11 | Another OpenTelemetry backend (`@hono/otel` 1.2, `@opentelemetry/sdk-node`) if the team already has one. |
-| Background jobs | pg-boss (queue in the same Postgres) | `pg-boss` 12 | Cloudflare Queues on Workers. |
-| Tests | Vitest + Testcontainers Postgres | `vitest` 5, `@testcontainers/postgresql` 12 | — |
-| Outbound webhooks | Standard Webhooks signing | `standardwebhooks` 1.1 | — |
+| Runtime | Node, current Active LTS | — | — |
+| Language | TypeScript, run directly by Node (type stripping) | `typescript` for `tsc --noEmit` | — |
+| Framework | Hono + `@hono/node-server` | `hono`, `@hono/node-server` | Fastify for Node-only, long-running, very high-throughput servers. Express only for existing Express code. NestJS only for large teams already standardised on it. |
+| Validation + OpenAPI | Zod + `@hono/zod-openapi` | `zod`, `@hono/zod-openapi` (install the Zod major its peer dependency asks for) | — |
+| Docs page | Scalar | `@scalar/hono-api-reference` | — |
+| Database | Postgres + Drizzle ORM, SQL migrations | `drizzle-orm`, `drizzle-kit` (stay on the `latest` tag, not a pre-release), `pg` | Prisma if the team already knows it. |
+| User auth | Better Auth | `better-auth` | Auth.js is maintained by the Better Auth team; don't start new projects on it. |
+| API keys | Better Auth API key plugin | `@better-auth/api-key` (keep it in step with `better-auth`) | — |
+| JWTs (only if needed) | `jose` | `jose` | — |
+| Rate limiting | `hono-rate-limiter` with a Redis store (Upstash) | `hono-rate-limiter`, `@upstash/redis` | — |
+| Logging | pino (JSON to stdout) | `pino` | — |
+| Errors and tracing | Sentry (built on OpenTelemetry) | `@sentry/node` / `@sentry/hono` | Another OpenTelemetry backend (`@hono/otel`, `@opentelemetry/sdk-node`) if the team already has one. |
+| Background jobs | pg-boss (queue in the same Postgres) | `pg-boss` | Cloudflare Queues on Workers. |
+| Tests | Vitest + Testcontainers Postgres | `vitest`, `@testcontainers/postgresql` | — |
+| Outbound webhooks | Standard Webhooks signing | `standardwebhooks` | — |
 | Host | Railway (server + managed Postgres) | — | Render (same shape); Fly.io for multi-region; Cloudflare Workers when the brief needs edge/serverless; Vercel Functions if the frontend already lives on Vercel. |
 
 ## 2. Runtime: Node and TypeScript
 
-- **Run `.ts` files directly.** Type stripping is stable (from Node 24.12 and 25.2) and on by default: `node src/server.ts`. No build step, no `tsx`, no `dist/`.
+- **Use the current Active LTS.** Check it against `node --version` and the Node release schedule (https://nodejs.org/en/about/previous-releases). When a new line is promoted to Active LTS, move to it and run the tests.
+- **Run `.ts` files directly.** The current LTS runs TypeScript directly via type stripping, on by default: `node src/server.ts`. Confirm with `node --version` and the Node TypeScript docs. No build step, no `tsx`, no `dist/`.
 - **Node does not type-check.** It only removes types. Run `tsc --noEmit` in CI and before every deploy.
 - **Only erasable syntax.** No `enum`, no runtime `namespace`, no constructor parameter properties. Use `as const` objects or union types instead. `erasableSyntaxOnly` makes `tsc` enforce this.
 - **Imports need the `.ts` extension** (`import { app } from './app.ts'`). `tsconfig` `paths` aliases don't work at runtime; use relative imports or `package.json` `"imports"` (`#lib/*`).
@@ -75,7 +76,7 @@ One default. Change a line only when the brief clearly calls for it.
 // package.json (extract)
 {
   "type": "module",
-  "engines": { "node": ">=24.12" },
+  "engines": { "node": ">=<current LTS major>" },
   "scripts": {
     "dev": "node --watch --env-file=.env src/server.ts",
     "start": "node src/server.ts",
@@ -278,7 +279,7 @@ await db.$client.end()
 
 ## 10. Security: OWASP API Top 10, headers, CORS, rate limits
 
-The **OWASP API Security Top 10 (2023)** is still the current edition. Map each to a defence:
+Use the current edition of the **OWASP API Security Top 10**. Map each to a defence:
 
 | # | Risk | Defence in this stack |
 |---|---|---|
@@ -346,12 +347,12 @@ The **OWASP API Security Top 10 (2023)** is still the current edition. Map each 
 **Dockerfile** — multi-stage, slim, non-root, with a health check. No build stage needed because Node runs the TypeScript directly.
 
 ```dockerfile
-FROM node:24-slim AS deps
+FROM node:<lts-major>-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-FROM node:24-slim
+FROM node:<lts-major>-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -365,7 +366,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 CMD ["node", "src/server.ts"]
 ```
 
-Add a `.dockerignore` (`node_modules`, `.env`, `.git`, `test`). Once Sentry is set up, the last line becomes `CMD ["node", "--import", "./src/instrument.ts", "src/server.ts"]`. Change `24` to `26` once Node 26 is LTS. Listen on `process.env.PORT`.
+Add a `.dockerignore` (`node_modules`, `.env`, `.git`, `test`). Once Sentry is set up, the last line becomes `CMD ["node", "--import", "./src/instrument.ts", "src/server.ts"]`. Replace `<lts-major>` with the current Active LTS major (pin the major, never `latest`), and move it to each new LTS once it's promoted. Listen on `process.env.PORT`.
 
 **Railway (default).** A service deployed from the GitHub repo (it uses the Dockerfile), plus a Railway Postgres service. Set `DATABASE_URL` as a reference variable (`${{Postgres.DATABASE_URL}}`). Set **Settings → Deploy → Pre-deploy Command** to `node src/db/migrate.ts`; if it fails, the deploy stops and the old version keeps running. Set the healthcheck path to `/ready`. Turn on scheduled backups for the Postgres volume (note: wiping the volume deletes its backups, so also take an occasional off-site `pg_dump`). Hobby plan: $5/month including $5 of usage.
 
@@ -394,5 +395,5 @@ Add a `.dockerignore` (`node_modules`, `.env`, `.git`, `test`). Once Sentry is s
 - Doing slow work (emails, AI calls) inside the request.
 - Stack traces in error responses. Logging tokens or request bodies with personal data.
 - Running as root in the container. Using `latest` Node images.
-- Starting new projects on Express, Auth.js or Node 22.
+- Starting new projects on Express, Auth.js or a Node line that isn't the current Active LTS.
 - Mocking the database in tests that are meant to catch authorisation bugs.

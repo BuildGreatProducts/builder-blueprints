@@ -1,11 +1,9 @@
 # iOS App — Reference
 
-> Last verified: 2026-10. Apple's frameworks change every June and Xcode every few months. Before relying on an API, build setting, `Info.plist` key or command-line flag, check Apple's documentation (https://developer.apple.com/documentation), `xcodebuild -help`, or Xcode's MCP documentation tools. For design: https://developer.apple.com/design/human-interface-guidelines. For review: https://developer.apple.com/app-store/review/guidelines (last updated 8 June 2026 at the time of writing).
->
-> Versions at last check: Xcode 27.0 (27.1 in release candidate, 27.2 in beta) · Swift 6.4 · iOS 27 SDK (iOS 27 released 15 September 2026) · Xcode 27 requires macOS Tahoe 26.6 or later on an Apple silicon Mac · Icon Composer 2.0 · App Store uploads must be built with Xcode 26 / the iOS 26 SDK or later (since 28 April 2026).
+> **Staying current.** Use the current release of Xcode from the Mac App Store or developer.apple.com, not a beta, and check what's installed with `xcodebuild -version` and `xcrun --show-sdk-version --sdk iphoneos`. Apple's frameworks change every June at WWDC and Xcode every few months, so before relying on an API, build setting, `Info.plist` key or command-line flag, read the documentation for the installed SDK: Xcode's documentation window, https://developer.apple.com/documentation, Xcode's built-in agent tools (section 2), Context7, or `xcodebuild -help`. For design: https://developer.apple.com/design/human-interface-guidelines. For review: https://developer.apple.com/app-store/review/guidelines. When this reference and Apple's current docs disagree, the docs win.
 
 ## Contents
-1. Default stack and versions
+1. Default stack
 2. Toolchain and the agent loop
 3. Creating the project
 4. Project layout
@@ -16,7 +14,7 @@
 9. App Review rules that catch people out
 10. Accounts and Sign in with Apple
 11. System integrations and permissions
-12. Design: HIG, Liquid Glass, icon and launch screen
+12. Design: HIG, system design language, icon and launch screen
 13. Accessibility and localisation
 14. Testing
 15. Performance
@@ -27,28 +25,28 @@
 
 ---
 
-## 1. Default stack and versions
+## 1. Default stack
 
 One default. Change a line only when the brief clearly calls for it.
 
-| Concern | Default | Version (Oct 2026) | Use instead when… |
-|---|---|---|---|
-| IDE and SDK | Xcode on an Apple silicon Mac | Xcode 27.0, iOS 27 SDK, macOS Tahoe 26.6+ | — |
-| Language | Swift 6 language mode, Main Actor default isolation | Swift 6.4 | — |
-| UI | SwiftUI with the `App` lifecycle | Minimum deployment **iOS 26** | UIKit only through `UIViewRepresentable` for a gap SwiftUI can't fill. iOS 27 minimum if the brief needs an iOS 27-only API. |
-| State | Observation (`@Observable`) | — | — |
-| Storage | SwiftData | — | Core Data only for an existing Core Data app, or when CloudKit sharing is core (section 7). |
-| Sync | SwiftData's built-in CloudKit sync (private database) | — | `CKSyncEngine` for custom sync or sharing. A server and `blueprint-mobile-app` for multi-user or social features. |
-| Purchases | StoreKit 2 with the StoreKit SwiftUI views | — | RevenueCat only if the app also ships on Android (`blueprint-mobile-app`). |
-| Identity | None (iCloud and App Store identity) | — | Sign in with Apple when a server needs to know who the user is. |
-| Tests | Swift Testing for logic, XCTest UI tests for the core loop | — | — |
-| Crashes and performance | Xcode Organizer + MetricKit | — | — |
-| CI | None at first; Xcode Cloud when releasing often | 25 compute hours/month included in the membership | — |
-| Distribution | TestFlight, then the App Store | — | — |
+| Concern | Default | Use instead when… |
+|---|---|---|
+| IDE and SDK | The current release of Xcode and its iOS SDK, on an Apple silicon Mac | — |
+| Language | The latest Swift language mode with strict concurrency, Main Actor default isolation | — |
+| UI | SwiftUI with the `App` lifecycle; minimum deployment is the current major iOS release | UIKit only through `UIViewRepresentable` for a gap SwiftUI can't fill. Go back one major iOS version only if the brief's audience needs it. |
+| State | Observation (`@Observable`) | — |
+| Storage | SwiftData | Core Data only for an existing Core Data app, or when CloudKit sharing is core (section 7). |
+| Sync | SwiftData's built-in CloudKit sync (private database) | `CKSyncEngine` for custom sync or sharing. A server and `blueprint-mobile-app` for multi-user or social features. |
+| Purchases | StoreKit 2 with the StoreKit SwiftUI views | RevenueCat only if the app also ships on Android (`blueprint-mobile-app`). |
+| Identity | None (iCloud and App Store identity) | Sign in with Apple when a server needs to know who the user is. |
+| Tests | Swift Testing for logic, XCTest UI tests for the core loop | — |
+| Crashes and performance | Xcode Organizer + MetricKit | — |
+| CI | None at first; Xcode Cloud when releasing often (25 compute hours/month included in the membership) | — |
+| Distribution | TestFlight, then the App Store | — |
 
 ## 2. Toolchain and the agent loop
 
-- **Xcode 27** needs macOS Tahoe 26.6 or later and an Apple silicon Mac; it no longer runs on Intel Macs. Install it from the Mac App Store or developer.apple.com/download, open it once (or run `xcodebuild -runFirstLaunch`), and add the iOS simulator runtime (`xcodebuild -downloadPlatform iOS`). `xcode-select -p` shows which Xcode the command line uses.
+- **Xcode:** use the current release, not a beta. It needs an Apple silicon Mac and a recent macOS; check the minimum macOS on developer.apple.com before updating either. Install it from the Mac App Store or developer.apple.com/download, open it once (or run `xcodebuild -runFirstLaunch`), and add the iOS simulator runtime (`xcodebuild -downloadPlatform iOS`). `xcode-select -p` shows which Xcode the command line uses; `xcodebuild -version` and `xcrun --show-sdk-version --sdk iphoneos` show its version and SDK.
 - **Build, test and run from the command line** so the coding agent can close its own loop. Use `-derivedDataPath build` so the built app is in a known place, and `-quiet` to keep output short:
 
 ```
@@ -66,7 +64,7 @@ xcrun simctl ui booted content_size accessibility-extra-extra-extra-large
 xcrun simctl status_bar booted override --time 9:41       # clean screenshots
 ```
 
-- **Xcode's MCP server.** Since Xcode 26.3, Xcode exposes its tools to external agents through `xcrun mcpbridge`. Turn it on in **Xcode → Settings → Intelligence → Model Context Protocol → Allow external agents to use Xcode tools**, then, for Claude Code, run `claude mcp add --transport stdio xcode -- xcrun mcpbridge`. Keep the project open in Xcode. The tools build, run tests, render SwiftUI previews and search the docs; in Xcode 27 agents can also boot simulators, launch the app, tap and take screenshots, read build settings and entitlements, read crash insights and edit String Catalogs. Xcode 27 also previews running the server without an open workspace (`xcrun mcp-server enable`), marked as early; don't rely on it yet.
+- **Xcode's MCP server.** Xcode exposes its tools to external agents through `xcrun mcpbridge`. Turn it on in **Xcode → Settings → Intelligence → Model Context Protocol → Allow external agents to use Xcode tools** (confirm the menu path in the installed Xcode), then, for Claude Code, run `claude mcp add --transport stdio xcode -- xcrun mcpbridge`. Keep the project open in Xcode. The tools build, run tests, render SwiftUI previews and search the docs; recent releases also let agents boot simulators, launch the app, tap and take screenshots, read build settings and entitlements, read crash insights and edit String Catalogs. The tool set grows with each release, so list what the server offers rather than assuming. If Apple's docs describe running the server without an open workspace (`xcrun mcp-server`) as a preview, don't rely on it.
 - Without the MCP server, `xcodebuild` and `simctl` are enough. Both paths work; use whichever is connected.
 
 ## 3. Creating the project
@@ -75,11 +73,11 @@ In Xcode: **File → New → Project → iOS → App**. Interface **SwiftUI**, l
 
 - **Bundle identifier** — reverse-DNS on a domain you own (`com.example.runlog`). It can't change after the app is on the App Store.
 - **Signing & Capabilities** — your team, **Automatically manage signing** on.
-- **General → Minimum Deployments** — iOS 26. **Supported Destinations** — iPhone only; remove iPad, Mac and Vision unless the brief includes them.
-- **Build Settings** — in Xcode 26 the app template turns on **Default Actor Isolation = MainActor** and **Approachable Concurrency = Yes**, but still sets **Swift Language Version = 5**. Check all three and set the language version to **Swift 6**, so data-race checking is complete.
+- **General → Minimum Deployments** — the brief's minimum iOS (by default the current major release). **Supported Destinations** — iPhone only; remove iPad, Mac and Vision unless the brief includes them.
+- **Build Settings** — check **Default Actor Isolation = MainActor**, **Approachable Concurrency = Yes** and **Swift Language Version**. The app template has lagged behind on the language version, so check the project's Swift Language Version build setting and set it to the latest, so data-race checking is complete.
 - **Capabilities** (Signing & Capabilities → + Capability), only those the brief needs: **iCloud** with CloudKit and a container `iCloud.<bundle id>` (Xcode adds Push Notifications with it), **Background Modes → Remote notifications** (for CloudKit sync), **App Groups** (`group.<bundle id>`, to share the store with widgets), **In-App Purchase**, **Sign in with Apple**, **HealthKit**.
 
-Projects created with Xcode 16 or later use folders that stay in sync with the disk, so new Swift files in a target's folder are picked up without editing the project file.
+New projects use folders that stay in sync with the disk, so new Swift files in a target's folder are picked up without editing the project file.
 
 ## 4. Project layout
 
@@ -118,7 +116,7 @@ RunLog/
 - **Property wrappers:** `@State` for view-local values and to own an `@Observable` object; `.environment(store)` and `@Environment(Store.self)` to share one; `@Bindable` to bind controls to an observable's properties; `@Query` to read SwiftData; `@Environment(\.modelContext)` to write.
 - **Add an `@Observable` class** when logic is shared across screens, talks to a framework (StoreKit, notifications, HealthKit), or needs testing on its own.
 - **Navigation:** `NavigationStack(path:)` bound to an array of a `Hashable` route enum, with `.navigationDestination(for:)`. `TabView` with `Tab` for top-level sections. Sheets with `.sheet(item:)`.
-- **Concurrency (Swift 6):** with Main Actor default isolation, app code runs on the main actor unless marked otherwise, which is right for UI. Move heavy work off it with an `actor`, a `@concurrent` function or a `@ModelActor` for background SwiftData imports. Use `.task { }` for async work tied to a view; it's cancelled when the view goes away. Treat every concurrency warning as a bug.
+- **Concurrency (strict checking):** with Main Actor default isolation, app code runs on the main actor unless marked otherwise, which is right for UI. Move heavy work off it with an `actor`, a `@concurrent` function or a `@ModelActor` for background SwiftData imports. Use `.task { }` for async work tied to a view; it's cancelled when the view goes away. Treat every concurrency warning as a bug.
 - **SwiftData across actors:** `ModelContext` and model objects aren't `Sendable`. Pass a `PersistentIdentifier` and fetch it again on the other side.
 - **Errors:** handle them where the user can act, with a message that says what to do next. No `try!` or force unwraps in app code.
 
@@ -164,10 +162,10 @@ struct RunLogApp: App {
 ```
 
 - Filter with `#Predicate` in `@Query(filter:)`, or `FetchDescriptor` in services. The main context autosaves; call `try context.save()` when it must be on disk now (e.g. before an App Intent returns).
-- **Previews:** a `@MainActor` `SampleData` with an in-memory container (`ModelConfiguration(isStoredInMemoryOnly: true)`) filled with realistic data, applied with `.modelContainer(SampleData.container)`. Use `#Preview`; `PreviewProvider` is deprecated in Xcode 27.
+- **Previews:** a `@MainActor` `SampleData` with an in-memory container (`ModelConfiguration(isStoredInMemoryOnly: true)`) filled with realistic data, applied with `.modelContainer(SampleData.container)`. Use `#Preview`; `PreviewProvider` is the deprecated older form.
 - **Widgets and App Intents** read the same store through an App Group: `ModelConfiguration(groupContainer: .identifier("group.com.example.runlog"))`. Decide this before the first TestFlight build; moving the store later strands existing data.
 - **Large data** (photos, files): `@Attribute(.externalStorage)`.
-- **iOS 27 additions** (iOS 27 minimum or `if #available`): `@Query(…, sectionBy:)` for sectioned lists, `@Attribute(.codable)` for types SwiftData can't store natively (opaque: can't sort or filter on them), `ResultsObserver` to observe a query outside views, and `HistoryObserver` for persistent history changes.
+- **Newer SwiftData APIs** (check each one's availability in the docs, and use `if #available` if the minimum iOS predates it): `@Query(…, sectionBy:)` for sectioned lists, `@Attribute(.codable)` for types SwiftData can't store natively (opaque: can't sort or filter on them), `ResultsObserver` to observe a query outside views, and `HistoryObserver` for persistent history changes.
 
 **CloudKit constraints** (if the app syncs — design for them from the first model):
 - No `@Attribute(.unique)`. CloudKit can't enforce it.
@@ -206,8 +204,8 @@ enum RunLogMigrationPlan: SchemaMigrationPlan {
 - **Testing.** Use two real devices (or a device and a Simulator) signed in to the same iCloud account. Sync takes seconds to minutes, not milliseconds. `xcrun simctl icloud_sync booted` nudges a Simulator. Test deleting on one device and editing on the other.
 - **No iCloud account.** The app must still work: SwiftData keeps data local and syncs once the user signs in. Check `CKContainer.default().accountStatus()` only to show a quiet note in Settings.
 - **Cost.** The private database counts against the user's iCloud storage, not yours.
-- **Sharing with other people.** SwiftData doesn't support CloudKit sharing (still true in iOS 27). The routes are Core Data with `NSPersistentCloudKitContainer` sharing, or `CKSyncEngine` with shared record zones and `CKShare`. Both are significant work. If sharing or social features are central, recommend `blueprint-mobile-app` or a server instead.
-- **`CKSyncEngine`** (iOS 17+) is the lower-level option when you need control over records, conflicts or the shared database. More code; choose it only when the brief needs it.
+- **Sharing with other people.** Check whether SwiftData supports CloudKit sharing in the installed SDK. Until it does, the routes are Core Data with `NSPersistentCloudKitContainer` sharing, or `CKSyncEngine` with shared record zones and `CKShare`. Both are significant work. If sharing or social features are central, recommend `blueprint-mobile-app` or a server instead.
+- **`CKSyncEngine`** is the lower-level option when you need control over records, conflicts or the shared database. More code; choose it only when the brief needs it.
 
 ## 8. StoreKit 2 and the paywall
 
@@ -267,7 +265,7 @@ SubscriptionStoreView(groupID: Store.groupID) {
 - `.subscriptionStatusTask(for: groupID)` keeps a view in step with the subscription state. `.manageSubscriptionsSheet(isPresented:)` opens Apple's manage-subscription sheet. `.offerCodeRedemption(isPresented:)` redeems offer codes.
 - **Restore:** StoreKit restores automatically on a new device, but App Review expects a **Restore Purchases** button. It calls `try await AppStore.sync()`, which may ask the user to sign in, so only call it from a tap.
 - **No server needed.** StoreKit 2 transactions are signed and verified on the device (`VerificationResult`). App Store Server Notifications and the App Store Server API are only for apps with their own server.
-- **Testing, in three tiers:** (1) the StoreKit configuration in the Simulator, with Xcode's transaction manager (**Debug → StoreKit → Manage Transactions**) to refund, expire and speed up renewals; Xcode 27 can also test offer codes there; automate with `SKTestSession` from the `StoreKitTest` framework; (2) on a device with a **Sandbox Apple Account** (App Store Connect → Users and Access → Sandbox); (3) TestFlight, where purchases are free and renewals are accelerated.
+- **Testing, in three tiers:** (1) the StoreKit configuration in the Simulator, with Xcode's transaction manager (**Debug → StoreKit → Manage Transactions**) to refund, expire and speed up renewals, and, in recent releases, test offer codes; automate with `SKTestSession` from the `StoreKitTest` framework; (2) on a device with a **Sandbox Apple Account** (App Store Connect → Users and Access → Sandbox); (3) TestFlight, where purchases are free and renewals are accelerated.
 - In App Store Connect each subscription needs a reference name, product ID matching the code, duration, price, a display name and description per localisation, and a review screenshot of the paywall. The first in-app purchase must be submitted with an app version.
 
 ## 9. App Review rules that catch people out
@@ -320,14 +318,14 @@ struct LogRunIntent: AppIntent {
 
 - Widgets read the shared store and refresh through their timeline; call `WidgetCenter.shared.reloadAllTimelines()` after the app changes data they show.
 
-## 12. Design: HIG, Liquid Glass, icon and launch screen
+## 12. Design: HIG, system design language, icon and launch screen
 
 - **Follow the Human Interface Guidelines** and use standard components: `NavigationStack`, `TabView`, `List`, `Form`, toolbars, sheets, `Label`, SF Symbols. They get the current look, Dynamic Type and accessibility for free.
-- **Liquid Glass** arrived in iOS 26 and is the current design language. Standard bars, tab bars, sheets and controls adopt it automatically. With the iOS 27 SDK the `UIDesignRequiresCompatibility` opt-out is ignored, so every app built with Xcode 27 gets it. Use `.buttonStyle(.glass)` / `.glassProminent` and `.glassEffect()` sparingly, for controls that float above content; never for content itself. Don't paint custom backgrounds behind navigation and tab bars.
+- **The current system design language** (Liquid Glass at the time of writing): standard bars, tab bars, sheets and controls adopt it automatically. The current SDK ignores the `UIDesignRequiresCompatibility` opt-out, so every app built with current Xcode gets it; confirm in Apple's docs before relying on any opt-out. Use `.buttonStyle(.glass)` / `.glassProminent` and `.glassEffect()` sparingly, for controls that float above content; never for content itself. Don't paint custom backgrounds behind navigation and tab bars.
 - **Colour:** semantic colours (`.primary`, `.secondary`, system backgrounds) plus one accent colour in the asset catalog, checked in light and dark mode.
 - **Layout:** adapt by size class (`@Environment(\.horizontalSizeClass)`), never by device model. The foldable iPhone Duo's inner screen reports a regular width, like an iPad.
-- **App icon:** design it in **Icon Composer** (Icon Composer 2.0 ships for Xcode 27 and previews both the current and the 2027 design generations). Drag the `.icon` file into the project as a normal resource (not into the asset catalog), set the target's **App Icon** name to match it, and remove any old asset-catalog app icon. A single 1024 × 1024 PNG in the asset catalog still works, and the system renders it in the new style, but you lose control of how it looks.
-- **Launch screen:** apps built with the iOS 27 SDK must have one configured in `Info.plist`. The SwiftUI template generates a `UILaunchScreen` entry; keep it and set its background colour to match the first screen.
+- **App icon:** design it in **Icon Composer** (use the version that matches the installed Xcode; it previews how the icon renders across the system's appearances). Drag the `.icon` file into the project as a normal resource (not into the asset catalog), set the target's **App Icon** name to match it, and remove any old asset-catalog app icon. A single 1024 × 1024 PNG in the asset catalog still works, and the system renders it in the current style, but you lose control of how it looks.
+- **Launch screen:** apps built with the current SDK must have one configured in `Info.plist`. The SwiftUI template generates a `UILaunchScreen` entry; keep it and set its background colour to match the first screen.
 
 ## 13. Accessibility and localisation
 
@@ -335,7 +333,7 @@ struct LogRunIntent: AppIntent {
 - **VoiceOver:** every icon-only button has a label (`Label("Add run", systemImage: "plus")` gives one free); `.accessibilityLabel` and `.accessibilityValue` for custom controls; `.accessibilityElement(children: .combine)` for rows; `Image(decorative:)` for decoration.
 - Contrast at least 4.5:1 for text, never colour alone to carry meaning, and respect Reduce Motion (`@Environment(\.accessibilityReduceMotion)`).
 - **Audit:** Accessibility Inspector (Xcode → Open Developer Tool) and `try app.performAccessibilityAudit()` in a UI test. Then declare what the app supports in App Store Connect's **Accessibility Nutrition Labels**.
-- **Localisation:** a `Localizable.xcstrings` String Catalog. `Text("…")` literals are extracted automatically; use `String(localized:)` outside views, plural variants in the catalog, and `.formatted()` for numbers, dates and measurements. In Xcode 27 agents can translate a String Catalog; have a native speaker review before shipping a language.
+- **Localisation:** a `Localizable.xcstrings` String Catalog. `Text("…")` literals are extracted automatically; use `String(localized:)` outside views, plural variants in the catalog, and `.formatted()` for numbers, dates and measurements. Xcode's agent tools can translate a String Catalog; have a native speaker review before shipping a language.
 
 ## 14. Testing
 
@@ -349,7 +347,7 @@ struct LogRunIntent: AppIntent {
 - **`body` must be cheap.** No fetching, sorting large arrays, creating formatters or decoding images inside it. Let `@Query` sort and filter; precompute in the model.
 - Long content in `List` or `LazyVStack` with stable identities. Downsample large photos before showing them.
 - **Launch:** nothing before the first frame that the first screen doesn't need. No network calls blocking launch.
-- **Measure** with Instruments (SwiftUI, Time Profiler, Hangs; Xcode 27 improves the Swift Concurrency instrument), and after release with Organizer's launch time, hangs and hitches.
+- **Measure** with Instruments (SwiftUI, Time Profiler, Hangs, Swift Concurrency), and after release with Organizer's launch time, hangs and hitches.
 
 ## 16. Privacy
 
@@ -362,9 +360,9 @@ struct LogRunIntent: AppIntent {
 
 ## 17. Crashes and metrics
 
-- **Xcode Organizer → Crashes, Hangs, Energy, Disk Writes, Launch Time, Hitches, Storage** for TestFlight and App Store builds, from users who share analytics. Xcode 27 adds **Generate Recommendations** to analyse a diagnostic and point at the code.
+- **Xcode Organizer → Crashes, Hangs, Energy, Disk Writes, Launch Time, Hitches, Storage** for TestFlight and App Store builds, from users who share analytics. Where Organizer offers **Generate Recommendations**, use it to analyse a diagnostic and point at the code.
 - **TestFlight feedback** (screenshots and comments from testers) appears in App Store Connect and Organizer.
-- **MetricKit** for in-app access to the same reports: on iOS 27, `MetricManager` delivers metric and diagnostic reports as async sequences (the older `MXMetricManager` subscriber is deprecated); keep the subscriber behind `if #available` for iOS 26.
+- **MetricKit** for in-app access to the same reports: the current convention is `MetricManager`, which delivers metric and diagnostic reports as async sequences (the older `MXMetricManager` subscriber is deprecated); if the minimum iOS predates `MetricManager`, keep the subscriber behind `if #available`. Confirm which the installed SDK offers.
 - Keep symbol upload on (the default) so crash logs show your function names. No third-party crash SDK by default.
 
 ## 18. Distribution: signing, upload, TestFlight, review
@@ -382,7 +380,7 @@ xcodebuild -exportArchive -archivePath build/<App>.xcarchive -exportOptionsPlist
 ```
 
   `ExportOptions.plist` sets `method` to `app-store-connect` and `destination` to `upload`. (`xcrun altool --upload-package` and the Transporter app also still upload builds.)
-- **SDK minimum:** since 28 April 2026, uploads must be built with Xcode 26 or later. Apple usually raises this each spring; check https://developer.apple.com/news/upcoming-requirements.
+- **SDK minimum:** Apple raises the minimum Xcode and SDK for App Store uploads each spring; check https://developer.apple.com/news/upcoming-requirements before uploading.
 - **TestFlight:** internal testers (up to 100 members of your App Store Connect team) get builds as soon as they process, with no review. External testers (up to 10,000, by email or public link) need the first build of each version to pass Beta App Review. Builds expire after 90 days. TestFlight uses the CloudKit **Production** environment and free sandbox purchases.
 - **Xcode Cloud** (optional): builds, tests and uploads on Apple's servers; 25 compute hours a month are included in the membership. Worth it once releases are frequent.
 - **App Review:** Apple reviews at least 50% of submissions within 24 hours and 90% within 48 hours. Choose manual or automatic release; for updates, phased release spreads automatic updates over seven days and can be paused.
@@ -391,9 +389,9 @@ xcodebuild -exportArchive -archivePath build/<App>.xcarchive -exportOptionsPlist
 
 - `ObservableObject`, `@Published`, `@StateObject` and `@EnvironmentObject` in new code (use `@Observable`, `@State`, `@Environment`).
 - Combine for new code (use async/await and Observation). Core Data for new apps (use SwiftData unless sharing is core).
-- UIKit screens where SwiftUI works; `UIDesignRequiresCompatibility` to dodge Liquid Glass (ignored with the iOS 27 SDK).
+- UIKit screens where SwiftUI works; `UIDesignRequiresCompatibility` to dodge the system design language (the current SDK ignores it).
 - A view model for every screen, and `NavigationView` or untyped navigation.
-- Force unwraps and `try!` in app code; ignoring Swift 6 concurrency warnings or switching to Swift 5 mode to silence them.
+- Force unwraps and `try!` in app code; ignoring strict-concurrency warnings or dropping to an older Swift language mode to silence them.
 - Heavy work in `body` or on the main actor; network calls before the first frame.
 - Secrets, API keys or "premium" flags in the bundle, `UserDefaults` or `Info.plist`.
 - Saving "isPro" yourself instead of checking `Transaction.currentEntitlements`; not starting the `Transaction.updates` listener at launch; forgetting `finish()`.
@@ -403,4 +401,4 @@ xcodebuild -exportArchive -archivePath build/<App>.xcarchive -exportOptionsPlist
 - Fixed font sizes, icon-only buttons without labels, colours that only work in light mode.
 - Third-party analytics, crash or ad SDKs added without a reason in the brief (each one changes the privacy label).
 - Hiding the subscription price, renewal terms or the close button on the paywall.
-- `PreviewProvider` (deprecated in Xcode 27) and copying API patterns from memory instead of checking the current docs.
+- `PreviewProvider` (deprecated; use `#Preview`) and copying API patterns from memory instead of checking the current docs.

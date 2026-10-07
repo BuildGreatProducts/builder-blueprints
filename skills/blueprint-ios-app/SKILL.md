@@ -50,12 +50,12 @@ Read the repo first. Anything the code already answers, state back and confirm r
 2. **The core loop and the magic moment.** What does the user do every time they open it, and what's the moment they first think *"oh, this is good"*? Then first launch: how few screens can stand before that moment? Default: no account, no onboarding carousel, at most one welcome screen, and sample or empty-state content that shows what to do.
 3. **Devices.** Default: iPhone only, portrait and landscape where it helps, with layouts that adapt by size class (including the larger foldable iPhone Duo screen). iPad, Mac, Apple Watch and Vision Pro are stretch goals for later versions, each with its own design work.
 4. **The data.** What are the *things* in the app (runs, routes, shoes)? For each: its key fields, what it belongs to, and what happens to its children when it's deleted. These become SwiftData `@Model` types and relationships. Draw them back as a short list and check it.
-5. **Sync and sharing.** Should the user's data follow them to their other devices? Default: yes, through their own iCloud with CloudKit, which costs the developer nothing. Do people need to share data with *other* people? Sharing a list with a partner is possible with CloudKit sharing but much harder (SwiftData doesn't support it yet); anything social, multi-user or needing a server (feeds, chat, leaderboards, a web version) wants `blueprint-mobile-app` or a server. Say so now, not after the build.
+5. **Sync and sharing.** Should the user's data follow them to their other devices? Default: yes, through their own iCloud with CloudKit, which costs the developer nothing. Do people need to share data with *other* people? Sharing a list with a partner is possible with CloudKit sharing but much harder (check whether SwiftData supports it in the current SDK; until it does, it means Core Data or `CKSyncEngine`); anything social, multi-user or needing a server (feeds, chat, leaderboards, a web version) wants `blueprint-mobile-app` or a server. Say so now, not after the build.
 6. **Accounts.** Default: none. The user's iCloud account is their identity for sync and the App Store is their identity for purchases. Add Sign in with Apple only if there's a server that needs to know who they are. If accounts exist, in-app account deletion is required.
 7. **System integrations.** Which of these does the core loop genuinely need: widgets, Live Activities, App Intents (Siri, Shortcuts, Spotlight, the Action button), local notifications, HealthKit, camera or photos, location? For each: why, the permission it asks for, and the capability or entitlement it needs. Default: none at launch except what the core loop needs; a widget is often the best second feature.
 8. **Business model.** Free, a subscription with a free trial, or a one-off unlock (lifetime)? Default for ongoing value: one subscription group with monthly and annual plans and a one-week free trial on annual; default for a simple utility: a one-off non-consumable unlock. What stays free? Collect product IDs, prices and what each unlocks for the products table.
-9. **Minimum iOS version.** Default: iOS 26, which gives the current design language and a mature SwiftData. Raise it to iOS 27 only if the brief needs an iOS 27 API (for example sectioned `@Query` results).
-10. **Design.** Is there a `DESIGN.md`, brand guide, icon idea, or an app they love the feel of? Default: follow Apple's Human Interface Guidelines and the current Liquid Glass design language with standard SwiftUI components, plus one accent colour and SF Symbols. If there's a `DESIGN.md`, it's the source of truth for colour, type and spacing.
+9. **Minimum iOS version.** Default: the current major iOS release, which gives the current design language and the newest SwiftData APIs. Go back one major version only if the brief's audience needs it, and then check that every API the brief relies on is available there.
+10. **Design.** Is there a `DESIGN.md`, brand guide, icon idea, or an app they love the feel of? Default: follow Apple's Human Interface Guidelines and Apple's current design language with standard SwiftUI components, plus one accent colour and SF Symbols. If there's a `DESIGN.md`, it's the source of truth for colour, type and spacing.
 11. **Accessibility and localisation.** Default: Dynamic Type, VoiceOver labels and dark mode from day one; English only at launch with every string in a String Catalog, so adding languages later is cheap. Ask which languages matter if any.
 12. **App Store account.** Are they enrolled in the Apple Developer Program, as an individual or an organisation? Organisations need a D-U-N-S number, which can take days. What's the app name, and is it free on the App Store? (Names are limited to 30 characters and must be unique.)
 
@@ -72,7 +72,7 @@ Close the interview by playing back the whole plan in one compact block and gett
 Core loop: <what they do each time> · Magic moment: <the first "oh, this is good"> · First launch: <screens before it>
 
 ## Devices and minimum iOS
-<iPhone only / + iPad …> · Minimum iOS: <26> · Bundle ID: <com.example.app>
+<iPhone only / + iPad …> · Minimum iOS: <current major release> · Bundle ID: <com.example.app>
 
 ## Data model
 | Model | Key properties | Relationships (delete rule) | Notes |
@@ -112,7 +112,7 @@ Read `REFERENCE.md` before writing any app code. Then let the user steer: build 
 
 If the user has no preference, recommend this order, one step per working session, so there's something to tap on early:
 
-1. Project setup (template, bundle ID, signing, Swift 6 settings), the SwiftData models with sample data for previews, and the folder layout.
+1. Project setup (template, bundle ID, signing, Swift language mode and concurrency settings), the SwiftData models with sample data for previews, and the folder layout.
 2. The core loop screen, working against local SwiftData, with previews.
 3. First launch: empty states, the welcome screen if any, and the path to the magic moment.
 4. CloudKit sync, tested on two real devices signed in to the same iCloud account.
@@ -124,7 +124,7 @@ If the user has no preference, recommend this order, one step per working sessio
 While building:
 
 - Check Apple's documentation before using any API you aren't certain of. Apple's frameworks change every June and older patterns in training data are often wrong. If Xcode's MCP server is connected (see `REFERENCE.md` section 2), use its documentation, build, preview and test tools.
-- After each step, build and run the tests from the command line, and look at the screen: run it in the Simulator and take a screenshot, or render the SwiftUI preview. Fix warnings as you go; Swift 6 concurrency warnings are bugs, not noise.
+- After each step, build and run the tests from the command line, and look at the screen: run it in the Simulator and take a screenshot, or render the SwiftUI preview. Fix warnings as you go; strict-concurrency warnings are bugs, not noise.
 - Every new `@Model` property gets a default value and every relationship is optional, so CloudKit sync never breaks. Once the app is on TestFlight, schema changes go through a versioned migration plan.
 - Ask for a permission only at the moment the user taps the feature that needs it, after explaining why, never at launch.
 - Never invent sample reviews, testimonials, statistics or prices in the UI or the paywall. Mark placeholder copy with `TODO:` so the Check catches it.
@@ -167,7 +167,7 @@ Walk the user in. Don't just drop the file. Summarise in chat: number of steps, 
 ## What "done" looks like
 
 - `docs/ios-app-brief.md` describes the app, and the project matches it: the models, capabilities, permissions and products in the brief are the ones in the app, and nothing else.
-- The Release build has zero warnings under Swift 6, the tests pass (including a UI test of the core loop), and every [must] item in `CHECKLIST.md` passes.
+- The Release build has zero warnings in the latest Swift language mode, the tests pass (including a UI test of the core loop), and every [must] item in `CHECKLIST.md` passes.
 - `docs/ios-app-launch.md` exists, tailored to this app, and the user knows their first step.
 
 Next step after launch: watch crashes and hangs in Xcode Organizer and the subscription numbers in App Store Connect for the first two weeks, reply to reviews, and feed what users ask for back into the brief. Re-run the Check before every release.

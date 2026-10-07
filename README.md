@@ -115,7 +115,7 @@ Each blueprint lives in `skills/blueprint-<type>/` and has the same four files:
 | `CHECKLIST.md` | Audit items |
 | `LAUNCH.md` | Launch guide template |
 
-Version numbers live only in `REFERENCE.md`, under a "Last verified" date.
+Keep blueprints evergreen: no version numbers for frameworks, libraries, SDKs or tools. Write guiding principles and the current conventions instead, and tell the agent to check what's installed and read the version-matched docs. Each `REFERENCE.md` opens with a "Staying current" note that says how.
 
 Before opening a PR, run `claude plugin validate .`.
 

@@ -13,7 +13,7 @@ The voice is a senior mobile engineer who has shipped subscription apps through 
 
 All in this skill's folder. Read them when the step that needs them comes up, not before.
 
-- `REFERENCE.md` — stack and versions, Expo Router layout, development builds, Convex, auth, store rules, RevenueCat, notifications, EAS, testing, store listings, patterns to avoid. Read before building or auditing.
+- `REFERENCE.md` — stack and staying current, Expo Router layout, development builds, Convex, auth, store rules, RevenueCat, notifications, EAS, testing, store listings, patterns to avoid. Read before building or auditing.
 - `CHECKLIST.md` — the pre-submission audit.
 - `LAUNCH.md` — the launch guide template.
 
