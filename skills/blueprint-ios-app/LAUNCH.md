@@ -97,7 +97,7 @@ Use this template to write `docs/ios-app-launch.md`. Tailor it to what was actua
   > Seed realistic sample data, boot the <iPhone model with Dynamic Island> simulator, set the status bar to 9:41 with `xcrun simctl status_bar booted override --time 9:41`, and capture the core loop, the magic moment and the paywall with `xcrun simctl io booted screenshot`. Check they match the sizes App Store Connect currently requires.
   You'll know it worked when: you have 3–6 screenshots at an accepted size that tell the story in order.
 - [ ] 🧑 Answer App Privacy, age rating and pricing — 20 min
-  **App Privacy**: answer from the Phase 1 list. **Age rating**: complete the questionnaire, which now also asks about in-app controls, capabilities, medical or wellness topics and social features. **Pricing and Availability**: price (usually free, with in-app purchases) and countries. Optionally declare **Accessibility Nutrition Labels** for what the app supports.
+  **App Privacy**: answer from the Phase 1 list. **Age rating**: complete the questionnaire, which also asks about in-app controls, capabilities, medical or wellness topics and social features. **Pricing and Availability**: price (usually free, with in-app purchases) and countries. Optionally declare **Accessibility Nutrition Labels** for what the app supports.
   You'll know it worked when: none of these sections shows a warning.
 
 ## Phase 10 — Submit for review

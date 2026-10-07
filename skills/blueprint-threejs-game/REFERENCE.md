@@ -1,10 +1,10 @@
 # Three.js Game — Reference
 
-> Last verified: 2026-10. three.js changes every month, and its WebGPU and TSL APIs still move between releases. Before writing code, run `npm view three version` and use the docs and examples for that release: https://threejs.org/docs, https://threejs.org/examples (always the latest release), or Context7 if available. For Blender, check https://docs.blender.org/api/current/bpy.ops.export_scene.html.
+> **Staying current.** three.js ships a new release every month, and its WebGPU and TSL APIs can still move between releases. Install the latest release, then check what's installed (`npm view three version`, `package.json`, `blender --version`). Before relying on an API, read the docs and examples for the installed release: https://threejs.org/docs, https://threejs.org/examples (always the latest release), the three.js migration guide (github.com/mrdoob/three.js/wiki/Migration-Guide), or Context7 if available. For Blender, use the Python API docs for the installed version (https://docs.blender.org/api/current/bpy.ops.export_scene.html is the latest). Check the migration guide whenever you upgrade. When this reference and the installed release's docs disagree, the docs win.
 
 ## Contents
 1. Default approach
-2. Versions checked
+2. Packages and what to check
 3. Project layout
 4. Renderer setup (WebGPU)
 5. The game loop
@@ -28,30 +28,30 @@
 ## 1. Default approach
 
 - **Plain three.js + TypeScript + Vite.** You own the loop, so a fixed timestep is easy, there are fewer layers between the agent and the bug, and WebGPU and TSL work without waiting for a wrapper to catch up. Use React Three Fiber only for React teams or UI-heavy games (section 18).
-- **`WebGPURenderer`**, imported from `three/webgpu`. It uses WebGPU where the browser supports it and falls back to WebGL 2 automatically. The three.js manual still describes it as maturing rather than finished, so test on every target device. If a feature you need is missing, try `forceWebGL: true` before switching renderers.
+- **`WebGPURenderer`**, imported from `three/webgpu`. It uses WebGPU where the browser supports it and falls back to WebGL 2 automatically. Check current WebGPU browser support on caniuse or MDN rather than assuming it, keep the WebGL fallback the renderer provides, check the three.js manual for the renderer's current status, and test on every target device. If a feature you need is missing, try `forceWebGL: true` before switching renderers.
 - **TSL for shaders.** `ShaderMaterial`, `RawShaderMaterial`, `onBeforeCompile` and `EffectComposer` don't work with `WebGPURenderer`. Write custom shading as node materials in TSL (`three/tsl`) and post-processing with `RenderPipeline`.
 - **Rapier for physics**, a fixed 60 Hz simulation step, an input action map, and a simple state machine for menu / play / pause / game-over.
 - **One asset pipeline for everything:** Blender (or AI, or a pack) → `export_glb.py` → glTF Transform (Meshopt + KTX2) → `GLTFLoader`.
 - **ES modules only.** Import from `three`, `three/webgpu`, `three/tsl` and `three/addons/...`. Don't use `require()`.
 
-## 2. Versions checked
+## 2. Packages and what to check
 
-Checked on npm and official sites in October 2026. Use these as a sanity check, not a pin: always run `npm view <package> version`.
+Install the latest release of each, and check what's installed rather than trusting a remembered number: `npm view <package> version` and `package.json`. Never pin a version from memory.
 
-| Thing | Version seen | Notes |
-|---|---|---|
-| three / @types/three | 0.186.x (r186) | `Clock` deprecated in r183 (use `Timer`); `PostProcessing` renamed `RenderPipeline` in r183; `PCFSoftShadowMap` removed in r186 |
-| vite | 8.x | |
-| @dimforge/rapier3d-compat | 0.21.x | Also `-deterministic-compat` and `-simd-compat` variants |
-| jolt-physics | 1.1.x | |
-| cannon-es | 0.20.x | No release since 2022; tiny projects only |
-| @react-three/fiber | 9.8.x (v10 is alpha) | v9 needs React 19 |
-| @react-three/drei / @react-three/rapier | 10.7.x / 2.2.x | |
-| koota / bitecs | 0.6.x / 0.4.x | |
-| howler / zustand / stats-gl | 2.2.x / 5.x / 4.2.x | |
-| @gltf-transform/cli | 4.5.x | KTX2 needs KTX-Software 4.4.0+ (`ktx` on PATH) |
-| Blender | 5.2 LTS (5.2.2) | glTF export parameter names checked against 5.0, 5.2 and main |
-| Blender Lab MCP server | needs Blender 5.1+ | |
+| Thing | Notes |
+|---|---|
+| three / @types/three | Keep `@types/three` on the same release as `three`. Current conventions: `Timer` (`Clock` is deprecated), `RenderPipeline` (formerly `PostProcessing`), `PCFShadowMap` (`PCFSoftShadowMap` has been removed). Read the migration guide when upgrading |
+| vite | |
+| @dimforge/rapier3d-compat | Also `-deterministic-compat` and `-simd-compat` variants |
+| jolt-physics | |
+| cannon-es | Check when it last had a release on npm; tiny projects only |
+| @react-three/fiber | Each major targets one React major: check its peer dependencies (`npm view @react-three/fiber peerDependencies`), and don't adopt a major that's still pre-release |
+| @react-three/drei / @react-three/rapier | Use the releases that match the installed fiber major |
+| koota / bitecs | APIs can change between releases; read the README for the installed release |
+| howler / zustand / stats-gl | |
+| @gltf-transform/cli | KTX2 needs KTX-Software (`ktx` on PATH); check `ktx --version` against the minimum glTF Transform's docs ask for |
+| Blender | Check `blender --version` (or `bpy.app.version` in scripts). glTF export parameter names change between releases; check them against the Blender Python API docs for the installed version |
+| Blender Lab MCP server | Needs a recent Blender; check the minimum version in its README |
 
 ## 3. Project layout
 
@@ -289,7 +289,7 @@ npx @gltf-transform/cli optimize in.glb out.glb --compress meshopt --texture-com
 
 An MCP server lets the coding agent control Blender directly: create objects, run scripts, take viewport screenshots.
 
-- **Recommended: the official Blender Lab MCP server** (projects.blender.org/lab/blender_mcp). It needs Blender 5.1 or later, a Blender add-on, and the server run with `uv`. Blender Lab warns that it executes AI-generated Python inside Blender **without a sandbox**, which could delete files or send data elsewhere. It recommends a virtual machine or a computer with no sensitive data.
+- **Recommended: the official Blender Lab MCP server** (projects.blender.org/lab/blender_mcp). It needs a recent Blender (check the minimum version in its README against `blender --version`), a Blender add-on, and the server run with `uv`. Blender Lab warns that it executes AI-generated Python inside Blender **without a sandbox**, which could delete files or send data elsewhere. It recommends a virtual machine or a computer with no sensitive data.
 - **Alternative: MCP for Blender** (`mcp-for-blender`, formerly `blender-mcp` by ahujasid; community-made, not affiliated with Blender). Set `BLENDER_MCP_SAFE_MODE=1` so scripts that touch files, the network or other programs are blocked before they run.
 
 **Safety rules for either:**
@@ -347,11 +347,11 @@ An MCP server lets the coding agent control Blender directly: create objects, ru
 
 ## 18. The React Three Fiber path
 
-For React teams or UI-heavy games: React Three Fiber v9 (React 19) + drei + `@react-three/rapier`.
+For React teams or UI-heavy games: React Three Fiber + drei + `@react-three/rapier`, on the React major the installed fiber release supports.
 
 - **Mutate in `useFrame`, never `setState` per frame.** Keep refs to objects and change `ref.current.position` directly. React state is for things that change rarely (menus, score).
 - `@react-three/rapier`'s `<Physics>` already runs a fixed `1/60` step with interpolation by default.
-- WebGPU in v9: pass an async `gl` factory to `<Canvas>` that creates `THREE.WebGPURenderer` from `three/webgpu` and awaits `renderer.init()`, and `extend(THREE)` with the WebGPU build. v10, with first-class WebGPU, is still alpha.
+- WebGPU: the current convention is to pass an async `gl` factory to `<Canvas>` that creates `THREE.WebGPURenderer` from `three/webgpu` and awaits `renderer.init()`, and `extend(THREE)` with the WebGPU build. R3F's WebGPU support is evolving, so check the R3F docs for the installed release before relying on this.
 - Use drei's `useGLTF` for loading, and make sure Meshopt and KTX2 are configured.
 - Everything else in this file (pipeline, budgets, hosting) still applies.
 

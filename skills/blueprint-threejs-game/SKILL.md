@@ -122,7 +122,7 @@ Recommend this order, and explain why when the user wants to jump ahead:
 
 While building:
 
-- **Check versions before writing code.** Run `npm view three version`, and use the three.js docs and examples for that release (the examples on threejs.org always match the latest). WebGPU and TSL (three.js's shader language) APIs still change between releases, so don't write them from memory. Use Context7 if it's available.
+- **Check versions before writing code.** Run `npm view three version`, and use the three.js docs and examples for that release (the examples on threejs.org always match the latest). WebGPU and TSL (three.js's shader language) APIs can change between releases, so don't write them from memory. Use Context7 if it's available.
 - After every feature, run the game and play it. Check the browser console for errors and the dev overlay for draw calls and frame time.
 - If mobile is a target, test on a real phone at least once a week. The desktop browser's device mode is not enough.
 - Every asset, however it was made, goes through the pipeline in `REFERENCE.md` before it goes in the game. Never ship a raw export or a raw AI-generated model.

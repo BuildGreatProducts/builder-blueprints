@@ -17,7 +17,7 @@ Audit the real repo against every item. **[must]** blocks launch. **[should]** i
 - [ ] **[must]** Every file a SKILL.md mentions exists in that skill's folder. *Verify: grep file names and check each one exists.*
 - [ ] **[should]** Each SKILL.md is under ~500 lines, and longer detail lives in reference files linked one level deep. *Verify: `wc -l`.*
 - [ ] **[should]** Reference files over 100 lines start with a contents list. *Verify: read them.*
-- [ ] **[should]** No versions or dates hard-coded in SKILL.md. They live in a reference file with a "Last verified" line. *Verify: grep for version patterns.*
+- [ ] **[should]** Skills are evergreen: no tool versions or dates hard-coded in SKILL.md or its reference files (the plugin's own semver in examples is fine). Version-sensitive conventions are written as principles, with an instruction to check the installed version and the live docs. *Verify: grep for version patterns.*
 - [ ] **[should]** No two skills compete for the same trigger phrases. *Verify: read the descriptions side by side.*
 - [ ] **[should]** Each skill folder is self-contained: no `../` references to files outside it. *Verify: `grep -rn "\.\./" skills/`.*
 

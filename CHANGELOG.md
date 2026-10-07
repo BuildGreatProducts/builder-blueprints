@@ -2,9 +2,11 @@
 
 ## 0.2.1 — October 2026
 
-**Next.js 16.4 in the website and web app blueprints.**
+**Evergreen blueprints: no more version numbers.**
 
-- `blueprint-website`: Cache Components on by default, `ensureStatic = 'navigation'` to keep every page static, `notFound()` instead of `dynamicParams`, CMS data tagged with `cacheTag`
+- Every blueprint drops pinned versions and "last verified" dates for guiding principles: start from the official create command, check what's installed, read the version-matched docs, and let the docs win when they disagree with the blueprint
+- Each `REFERENCE.md` now opens with a "Staying current" note tailored to its stack
+- `blueprint-website`: Cache Components on, `ensureStatic = 'navigation'` to keep every page static, `notFound()` instead of `dynamicParams`, CMS data tagged with `cacheTag`
 - `blueprint-web-app`: signed-in server rendering inside `<Suspense>`, `ClerkProvider` inside `<body>`, marketing pages kept static with `ensureStatic`
 
 ## 0.2.0 — October 2026

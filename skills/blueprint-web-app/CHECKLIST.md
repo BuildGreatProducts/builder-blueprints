@@ -11,7 +11,7 @@ Audit the real app against every item. **[must]** blocks launch. **[should]** is
 - [ ] **[must]** The Convex functions type-check and push cleanly. *Verify: run `npx convex dev --once`; for production, `npx convex deploy --dry-run` prints what would be pushed without deploying.*
 - [ ] **[must]** The tests pass. *Verify: run `npx vitest run`.*
 - [ ] **[should]** ESLint with `@convex-dev/eslint-plugin` (recommended set plus `require-access-control` and `no-collect-in-query`) reports no errors. *Verify: run `npx eslint convex`.*
-- [ ] **[should]** No `middleware.ts` (it's `proxy.ts` on Next.js 16), and `'use client'` appears only in interactive components, never at the top of a page or layout. *Verify: `ls`; `grep -rln "use client" app`.*
+- [ ] **[should]** No `middleware.ts` (the current convention is `proxy.ts`; confirm in the installed Next.js docs), and `'use client'` appears only in interactive components, never at the top of a page or layout. *Verify: `ls`; `grep -rln "use client" app`.*
 
 ## Auth and ownership
 - [ ] **[must]** Every public `query`, `mutation` and `action` either calls the auth helper (or a custom builder that does) or is deliberately public with a reason in the brief. *Verify: read every one; `grep -rnE "(query|mutation|action)\(\{" convex --include=*.ts | grep -v _generated`. Never sample.*

@@ -12,7 +12,7 @@ Audit the real repo against every item. **[must]** blocks launch. **[should]** i
 - [ ] **[must]** The type check passes. *Verify: run `npx tsc --noEmit`.*
 - [ ] **[must]** The tests pass. *Verify: run `npx vitest run` (Docker must be running for Testcontainers).*
 - [ ] **[must]** The server starts with Node's built-in TypeScript support and the code uses only erasable syntax (no `enum`, no runtime `namespace`). *Verify: `node src/server.ts` starts; `erasableSyntaxOnly` is set in `tsconfig.json`.*
-- [ ] **[should]** `package.json` pins the Node LTS range in `engines`, and the lockfile is committed. *Verify: read `package.json`; `git ls-files package-lock.json`.*
+- [ ] **[should]** `package.json` sets `engines.node` to the current Active LTS range, and the lockfile is committed. *Verify: read `package.json`; `git ls-files package-lock.json`.*
 - [ ] **[should]** Env vars are parsed in one place with a Zod schema, and the app refuses to start when one is missing. *Verify: read `src/env.ts`; start without `.env` and see it fail clearly.*
 
 ## Ownership and auth
@@ -55,7 +55,7 @@ Audit the real repo against every item. **[must]** blocks launch. **[should]** i
 ## Operations
 - [ ] **[must]** `GET /health` returns 200 without touching the database, and `GET /ready` checks the database. *Verify: call both; stop the database and call `/ready` (503).*
 - [ ] **[must]** The server shuts down gracefully on `SIGTERM` (stops accepting, finishes in-flight requests, closes the pool). *Verify: read `src/server.ts`; send `SIGTERM` during a request.*
-- [ ] **[must]** The Dockerfile is multi-stage, uses a slim Node LTS image, runs as a non-root user, and has a `HEALTHCHECK`. *Verify: read it; `docker build .` and `docker run` it.*
+- [ ] **[must]** The Dockerfile is multi-stage, uses a slim image of the current Node LTS (major pinned), runs as a non-root user, and has a `HEALTHCHECK`. *Verify: read it; `docker build .` and `docker run` it.*
 - [ ] **[should]** Logs are JSON with request IDs, and redact authorisation headers, cookies, keys and passwords. *Verify: read the logger config; make a signed-in request and read the log line.*
 - [ ] **[should]** Errors reach Sentry (or the chosen OpenTelemetry backend). *Verify: trigger a test error and see it arrive.*
 - [ ] **[should]** CI runs the type check, tests and audit on every push. *Verify: read the CI workflow.*

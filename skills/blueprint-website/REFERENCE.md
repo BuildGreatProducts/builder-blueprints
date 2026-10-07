@@ -1,8 +1,11 @@
 # Website — Reference
 
-> Last verified: 2026-10. Next.js moves quickly. Before relying on an API, config option or file convention, read the version-matched docs bundled with the project in `node_modules/next/dist/docs/` (the project's `AGENTS.md` points there), or https://nextjs.org/docs. For search guidance: https://developers.google.com/search/docs.
->
-> Versions at last check: Next.js 16.4 (16.4.0, released 6 October 2026; 16.x is Active LTS) · React 19.3 · Node.js 20.9 or later · Tailwind CSS 4.3 · shadcn CLI v4 · Payload 3.x (4.0 in canary) · TypeScript 5.x or 7 (16.3 and later can type-check with TypeScript 7) · `@opennextjs/cloudflare` 1.x.
+> **Staying current.** This reference describes current conventions, not a particular release.
+> - Start new projects with `npx create-next-app@latest` so they get the latest stable Next.js.
+> - Before writing code, check what's actually installed: `package.json`, or `npm view next version` for the latest release. Use the Node.js version the Next.js docs require (the current Active LTS is a safe default).
+> - Before relying on an API, config option, flag or file convention, read the version-matched docs bundled with the project in `node_modules/next/dist/docs/` (the project's `AGENTS.md` points there), https://nextjs.org/docs, or Context7. For search guidance: https://developers.google.com/search/docs.
+> - When this reference and the installed version's docs disagree, the docs win.
+> - Prefer stable releases over beta or canary.
 
 ## Contents
 1. Default approach
@@ -27,8 +30,8 @@
 ## 1. Default approach
 
 - **Next.js App Router, TypeScript, Turbopack.** Turbopack is the default for `next dev` and `next build`; no flag needed.
-- **Tailwind CSS v4 + shadcn/ui.** Tailwind v4 is configured in CSS (`@import "tailwindcss";` and `@theme` in `globals.css`); there is no `tailwind.config.js`. shadcn/ui components are copied into the repo, so they're yours to edit.
-- **Static by default, and enforced.** A website's pages should be prerendered at build time. New apps have Cache Components on; add `export const ensureStatic = 'navigation'` to the root layout so the build fails if anything would render per request. Only relax it, on the one route that needs it, when a page genuinely changes per visitor.
+- **Tailwind CSS + shadcn/ui.** Tailwind is configured CSS-first (`@import "tailwindcss";` and `@theme` in `globals.css`); there is no `tailwind.config.js`. If you find one, the project is on the older JavaScript config; follow Tailwind's upgrade guide rather than mixing the two. shadcn/ui components are copied into the repo, so they're yours to edit.
+- **Static by default, and enforced.** A website's pages should be prerendered at build time. Keep Cache Components on and add `export const ensureStatic = 'navigation'` to the root layout so the build fails if anything would render per request. Only relax it, on the one route that needs it, when a page genuinely changes per visitor.
 - **Content in the repo** as MDX unless non-developers edit regularly (then Sanity; Payload if they want the CMS inside the app).
 - **Vercel** for hosting. Cloudflare Workers via OpenNext as the alternative.
 - **SEO is built in from the first commit,** not added at the end: metadata, sitemap, robots, structured data and performance budgets come before the second page.
@@ -40,7 +43,7 @@ npx create-next-app@latest <name> --yes
 npx shadcn@latest init
 ```
 
-`--yes` accepts the recommended defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` import alias) and, from 16.4, turns on Cache Components (`cacheComponents: true` and `partialPrefetching: true` in `next.config.ts`). Keep them on. `create-next-app` also writes `AGENTS.md` and `CLAUDE.md`.
+`--yes` accepts the recommended defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` import alias). Recent Next.js also turns on Cache Components in `create-next-app` (`cacheComponents: true` and `partialPrefetching: true` in `next.config.ts`). Keep them on. If the project's `next.config.ts` doesn't have them, add them, after checking the option names in the bundled docs. `create-next-app` also writes `AGENTS.md` and `CLAUDE.md`.
 
 ## 2. Project layout
 
@@ -72,14 +75,14 @@ next.config.ts              # redirects, images, MDX
 Notes:
 - Keep one `lib/site.ts` with the canonical site URL (from `NEXT_PUBLIC_SITE_URL`), name, default description and the date the home page content last changed (`updated`). Metadata, sitemap, robots and JSON-LD all read from it.
 - Route groups `(name)` organise files without changing URLs.
-- `proxy.ts` (the v16 replacement for `middleware.ts`) is rarely needed on a website. Prefer `redirects()` in `next.config.ts`. If you must use it, it runs on the Node.js runtime and the codemod `npx @next/codemod@canary middleware-to-proxy .` migrates old files.
+- `proxy.ts` (the current name for what used to be `middleware.ts`) is rarely needed on a website. Prefer `redirects()` in `next.config.ts`. If you must use it, it runs on the Node.js runtime and the `middleware-to-proxy` codemod migrates old files (run it as the bundled docs show).
 
 ## 3. Using the bundled docs
 
 - Every install of `next` ships its docs in `node_modules/next/dist/docs/` (`01-app/` holds getting started, guides and API reference).
 - `create-next-app` writes `AGENTS.md` (and a `CLAUDE.md` that imports it). On existing projects, `next dev` writes or updates a managed block in `AGENTS.md` when it detects a coding agent. Commit it. Put your own project instructions outside the `<!-- BEGIN:nextjs-agent-rules -->` / `<!-- END:nextjs-agent-rules -->` markers.
 - Opting out (`agentRules: false` in `next.config.ts`) is not recommended.
-- To upgrade an existing site, run `npx next@canary upgrade --agent=latest`: it picks the target release and hands the agent the migration guides, codemods and checks.
+- To upgrade an existing site, use the upgrade command from the bundled upgrading guide (e.g. `npx next@canary upgrade --agent=latest`, which picks the target release and hands the agent the migration guides, codemods and checks). Upgrade to a stable release, not a canary.
 - When an error message includes a `Learn more` link to `nextjs.org/docs/messages/...`, read it; those pages are written for agents.
 
 ## 4. Metadata
@@ -141,7 +144,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 ```
 
 - Include only canonical, indexable, 200-status URLs. Use real `lastModified` dates; Google ignores `changeFrequency` and `priority`.
-- Over 50,000 URLs: split with `generateSitemaps` (its `id` prop is a Promise in v16).
+- Over 50,000 URLs: split with `generateSitemaps` (its `id` prop is a Promise; await it).
 
 **Robots** — `app/robots.ts`:
 
@@ -214,8 +217,8 @@ Which types to use:
 
 Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms, **CLS** ≤ 0.1.
 
-- **Images** — always `next/image` with `width`/`height` (or `fill` inside a sized box) and a real `sizes` attribute for responsive images. On the single LCP image (usually the hero) set `loading="eager"` and `fetchPriority="high"`. The `priority` prop is deprecated in v16; `preload` exists but use it only when one image is always the LCP element, and not together with `loading` or `fetchPriority`. Write descriptive `alt` text; use `alt=""` for decorative images.
-- **Image config** — v16 defaults `images.qualities` to `[75]`; add other values explicitly. Allow remote images with `images.remotePatterns`.
+- **Images** — always `next/image` with `width`/`height` (or `fill` inside a sized box) and a real `sizes` attribute for responsive images. On the single LCP image (usually the hero) set `loading="eager"` and `fetchPriority="high"`. Don't use the `priority` prop: it's deprecated. `preload` exists but use it only when one image is always the LCP element, and not together with `loading` or `fetchPriority`. Write descriptive `alt` text; use `alt=""` for decorative images.
+- **Image config** — `images.qualities` defaults to `[75]`; add other values explicitly. Allow remote images with `images.remotePatterns`.
 - **Fonts** — `next/font/google` or `next/font/local`. Self-hosted, no layout shift. At most two families; prefer variable fonts. Apply via a CSS variable in the root layout.
 - **JavaScript** — Server Components by default. Add `'use client'` only to the small interactive leaf that needs it, never to a whole page or layout.
 - **Third-party scripts** — `next/script` with `strategy="afterInteractive"` or `"lazyOnload"`. Chat widgets and embeds load on interaction. Every script must earn its place.
@@ -251,9 +254,9 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 
 ## 11. Rendering and caching
 
-- **Cache Components is the model.** From 16.4 Next.js recommends it for every app, `create-next-app` turns it on (`cacheComponents: true` with `partialPrefetching: true`), and it becomes the default in Next.js 17. Don't turn it off.
+- **Cache Components is the model.** Next.js recommends it for every app, and recent `create-next-app` turns it on (`cacheComponents: true` with `partialPrefetching: true`). If your project doesn't have it, turn it on. Don't turn it off.
 - **What's static:** components that use only imports, files read at module scope and pure computation are prerendered automatically. Fetches and database calls are *not* cached unless they run inside a `'use cache'` function; give each one a `cacheLife` (e.g. `'max'` for content that changes only when someone publishes).
-- **Enforce it:** `export const ensureStatic = 'navigation'` in `app/layout.tsx` makes `next dev` and `next build` fail on uncached data, `cookies()`, `headers()`, server-side `searchParams`, `connection()` or a short `cacheLife` anywhere in the site. Dynamic routes under it must export `generateStaticParams` returning at least one complete set of params. Use `next build --debug-prerender` for full stack traces.
+- **Enforce it:** `export const ensureStatic = 'navigation'` in `app/layout.tsx` (confirm the export in the bundled docs' route segment config reference) makes `next dev` and `next build` fail on uncached data, `cookies()`, `headers()`, server-side `searchParams`, `connection()` or a short `cacheLife` anywhere in the site. Dynamic routes under it must export `generateStaticParams` returning at least one complete set of params. Use `next build --debug-prerender` for full stack traces.
 - **Dynamic routes:** `generateStaticParams` lists the known slugs (it must return at least one). An unlisted slug is generated on first request, so the page calls `notFound()` when the slug isn't real. `dynamicParams` isn't supported.
 - **No clock or randomness in the shell:** `new Date()`, `Date.now()` and `Math.random()` during prerender fail the build. Use real dates from content, or cache the value.
 - **CMS content:** tag it with `cacheTag('posts')` inside the `'use cache'` function and revalidate on publish with `revalidateTag('posts', 'max')` from the webhook's Route Handler. The one-argument form is deprecated, and `fetch(url, { next: { tags } })` is the old model.
@@ -262,13 +265,13 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 
 ## 12. International sites
 
-- Only if the brief lists more than one locale. Use a root `[lang]` segment (`app/[lang]/...`); since 16.3, read it anywhere in Server Components with `import { lang } from 'next/root-params'`.
+- Only if the brief lists more than one locale. Use a root `[lang]` segment (`app/[lang]/...`) and read it anywhere in Server Components with `import { lang } from 'next/root-params'` (check the bundled docs for the current API).
 - Every page sets `alternates.languages` (hreflang) for all its translations plus `x-default`, and its own canonical. Add the same `alternates.languages` to sitemap entries.
 - Translate the URL slugs and metadata, not just the body. Never auto-redirect by IP; offer a language switcher.
 
 ## 13. AI search
 
-- Google's guidance (Search Central, "Optimizing your website for generative AI features on Google Search", 2026): AI Overviews and AI Mode draw on the normal Google index. You don't need special AI files, markup or Markdown copies, and you shouldn't chop content into small chunks. Unique, useful content from real expertise matters most; classic SEO is AI search SEO.
+- Google's guidance (Search Central, "Optimizing your website for generative AI features on Google Search"): AI Overviews and AI Mode draw on the normal Google index. You don't need special AI files, markup or Markdown copies, and you shouldn't chop content into small chunks. Unique, useful content from real expertise matters most; classic SEO is AI search SEO.
 - Structured data isn't required for AI features but still helps rich results.
 - `llms.txt` is optional. Google doesn't use it; some other AI tools do. If you add it, generate `app/llms.txt/route.ts` from the same source as the sitemap so it stays accurate. Cheap, but not a priority.
 - Don't block AI crawlers in `robots.ts` unless the user decides to. `Google-Extended` controls use for Gemini training, not inclusion in Search.
@@ -285,20 +288,20 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 - Uses the Node.js runtime, not Edge. `proxy.ts` support is still maturing on this adapter; keep redirects in `next.config.ts`.
 - Worker size limits: 3 MiB compressed on the free plan, 10 MiB on paid.
 - Cloudflare also promotes `vinext`, a Vite-based reimplementation of the Next.js API. It isn't Next.js; don't use it for this blueprint.
-- Next.js 16.2 made the Adapter API stable; first-party adapters for Cloudflare and others are being built on it. Check the current Cloudflare docs before setting up.
+- Next.js has a stable Adapter API, and first-party adapters for Cloudflare and other hosts are built on it. Check the current Cloudflare and Next.js deployment docs before setting up, in case an official adapter has replaced OpenNext.
 
 ## 15. Analytics, forms and privacy
 
 - **Analytics** — default to Vercel Web Analytics (`@vercel/analytics`, `<Analytics />` in the root layout) plus Speed Insights (`@vercel/speed-insights`). Both are cookieless. On Cloudflare, use Plausible. Track the conversion goal as a custom event.
-- **GA4** — only if the user needs it. Load it with `@next/third-parties/google` (`<GoogleAnalytics gaId=… />`). In the UK and EU it sets cookies that need prior consent: add a consent banner with Google Consent Mode v2, defaulting to denied.
+- **GA4** — only if the user needs it. Load it with `@next/third-parties/google` (`<GoogleAnalytics gaId=… />`). In the UK and EU it sets cookies that need prior consent: add a consent banner with the current version of Google Consent Mode, defaulting to denied.
 - **Forms** — a Server Action that validates input on the server (e.g. with Zod), sends the enquiry by email (e.g. Resend) and shows a clear success state. Add a honeypot field and rate limiting against spam. Redirect to a `noindex` thank-you page, or fire the conversion event on success.
 - **Legal** — a privacy policy (what's collected, by which tools, why, and how to get in touch) linked from the footer and from any form; a cookie policy if cookies need consent; terms if selling. UK limited companies must show their registered name, number and office address.
 - **Secrets** — in `.env.local` locally and the host's environment variables in production. Only `NEXT_PUBLIC_` values reach the browser.
 
 ## 16. Patterns to avoid
 
-- `middleware.ts` (renamed `proxy.ts` in v16), and redirects done in `proxy.ts` that `next.config.ts` could do.
-- `<Image priority>` (deprecated in v16), raw `<img>` for content images, missing `sizes`, and lazy-loading the hero image.
+- `middleware.ts` (now `proxy.ts`), and redirects done in `proxy.ts` that `next.config.ts` could do.
+- `<Image priority>` (deprecated), raw `<img>` for content images, missing `sizes`, and lazy-loading the hero image.
 - `'use client'` at the top of pages or layouts; whole pages rendered client-side so content isn't in the initial HTML.
 - Duplicate titles and descriptions, the same canonical on every page, and canonicals pointing to redirecting or 404 URLs.
 - Shipping `disallow: '/'` or `noindex` to production (often left over from staging).

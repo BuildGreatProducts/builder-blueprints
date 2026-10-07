@@ -93,7 +93,7 @@ Read `REFERENCE.md` before writing any plugin files. Then let the user steer: bu
 
 While building:
 
-- Check current Claude Code docs before relying on any field or command you aren't sure of. The format evolves. Use https://code.claude.com/docs/en/plugins-reference and https://code.claude.com/docs/en/skills, or Context7 if available.
+- Check the installed version (`claude --version`) and the current Claude Code docs before relying on any field or command you aren't sure of. The format evolves. Use https://code.claude.com/docs/en/plugins-reference and https://code.claude.com/docs/en/skills, or Context7 if available.
 - Write each skill's `description` first, from the brief's trigger phrasings, before writing the body.
 - After each skill, test it: start a fresh session with the plugin loaded (`claude --plugin-dir .`), type one of the brief's phrasings without naming the skill, and confirm it triggers. If it doesn't, fix the description, not the body.
 - Run `claude plugin validate .` after any manifest change.

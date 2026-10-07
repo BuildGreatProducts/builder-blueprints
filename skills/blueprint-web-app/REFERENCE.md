@@ -1,8 +1,10 @@
 # Web App — Reference
 
-> Last verified: 2026-10. Next.js, Convex and Clerk all move quickly. Before relying on an API, option or CLI flag, read the version-matched Next.js docs in `node_modules/next/dist/docs/` (the project's `AGENTS.md` points there), the Convex guidelines installed by `npx convex ai-files install`, or the live docs: https://docs.convex.dev, https://nextjs.org/docs, https://clerk.com/docs, https://docs.stripe.com.
->
-> Versions at last check: `convex` 1.46 · Next.js 16.4 (16.x is Active LTS; 16.3.8 is the last 16.3 patch) · React 19.3 · `@clerk/nextjs` 7.9 · `@convex-dev/stripe` 0.1 · `@convex-dev/resend` 0.2 · `@convex-dev/rate-limiter` 0.4 · `@convex-dev/workpool` 0.4 · `convex-helpers` 0.1 · `convex-test` 0.0.60 · Vitest 5.0 · `@convex-dev/eslint-plugin` 5.0 · Tailwind CSS 4.3 · shadcn CLI v4 · TypeScript 7.0.
+> **Staying current.** Next.js, Convex, Clerk and the Convex components all move quickly, so this reference describes conventions, not versions.
+> - Start new projects from the official create commands below (`create-next-app@latest`, `shadcn@latest`), so they get the latest stable release. Prefer stable releases over beta or canary.
+> - Before writing code, check what's actually installed: `package.json`, or `npm view <pkg> version` for the latest.
+> - Before relying on an API, option, CLI flag or file convention, read the version-matched docs: the Next.js docs bundled in `node_modules/next/dist/docs/` (the project's `AGENTS.md` points there), the Convex guidelines installed by `npx convex ai-files install`, each component's README, Context7, or the live docs: https://docs.convex.dev, https://nextjs.org/docs, https://clerk.com/docs, https://docs.stripe.com.
+> - When this reference and the installed version's docs disagree, the docs win.
 
 ## Contents
 1. Default stack
@@ -34,16 +36,16 @@ One default. Change a line only when the brief clearly calls for it.
 
 | Concern | Default | Use instead when… |
 |---|---|---|
-| Frontend | Next.js App Router, TypeScript, Turbopack, Tailwind CSS v4 + shadcn/ui | — |
+| Frontend | Next.js App Router, TypeScript, Turbopack, Tailwind CSS + shadcn/ui | — |
 | Backend and database | Convex Cloud (queries, mutations, actions, HTTP actions, scheduler, crons, file storage) | — |
-| Auth | **Clerk** via `ConvexProviderWithClerk` | The user wants no third-party auth service: Better Auth through the `@convex-dev/better-auth` component. Convex Auth (`@convex-dev/auth`) is still beta, with a v2 in progress; don't start new production apps on it. |
+| Auth | **Clerk** via `ConvexProviderWithClerk` | The user wants no third-party auth service: Better Auth through the `@convex-dev/better-auth` component. Convex Auth (`@convex-dev/auth`) is fine once it's out of beta; check its status before choosing it for a production app. |
 | Payments | Stripe Checkout + Customer Portal through the official `@convex-dev/stripe` component | Polar (`@convex-dev/polar`) if they want a merchant of record that handles sales tax for them. Stripe Connect for marketplaces that pay out to sellers. |
 | Email | Resend through `@convex-dev/resend` | — |
 | Rate limits | `@convex-dev/rate-limiter` | — |
 | Tests | Vitest + `convex-test` + `@edge-runtime/vm` | — |
 | Hosting | Vercel (Next.js) + Convex Cloud (backend), deployed together by one build command | — |
 
-**Why Clerk is the default.** Convex itself has no single default, but its docs list the third-party providers first, and Clerk has the most mature fit: a first-party Convex integration (`convex/react-clerk`), a Next.js SDK with prebuilt sign-in, sign-up and profile UI, and Organizations for team apps. Convex Auth is beta and its own docs say it has fewer features. The Better Auth component is the right choice when the user wants everything in their own Convex database and no extra vendor; it costs more setup and more maintenance.
+**Why Clerk is the default.** Convex itself has no single default, but its docs list the third-party providers first, and Clerk has the most mature fit: a first-party Convex integration (`convex/react-clerk`), a Next.js SDK with prebuilt sign-in, sign-up and profile UI, and Organizations for team apps. Convex Auth's own docs say it has fewer features; check whether it's out of beta before choosing it. The Better Auth component is the right choice when the user wants everything in their own Convex database and no extra vendor; it costs more setup and more maintenance.
 
 ## 2. Project setup
 
@@ -56,9 +58,9 @@ npx shadcn@latest init
 npm install @clerk/nextjs # or: npx -y clerk@latest init
 ```
 
-- `--yes` accepts the recommended Next.js defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` alias), turns on Cache Components (`cacheComponents: true`, `partialPrefetching: true`; the 16.4 default and Next.js's recommendation for every app), and writes `AGENTS.md` and `CLAUDE.md`. Keep Cache Components on; section 10 covers what it means for signed-in pages.
+- `--yes` accepts the recommended Next.js defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` alias), turns on Cache Components (`cacheComponents: true`, `partialPrefetching: true`; the current default and Next.js's recommendation for every app; confirm the flags in the bundled docs), and writes `AGENTS.md` and `CLAUDE.md`. Keep Cache Components on; section 10 covers what it means for signed-in pages.
 - `npx convex dev` writes `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` to `.env.local`, creates `convex/`, and offers to install the Convex AI files. Keep it running in a second terminal while building, or run both with `npx convex dev --start 'next dev'`.
-- `npm create convex@latest` has Next.js + Clerk templates, but at last check they still used Next.js 14 and Tailwind 3. Start from `create-next-app` instead.
+- `npm create convex@latest` has Next.js + Clerk templates. Check they're on the current Next.js and Tailwind before using them; otherwise start from `create-next-app`.
 
 ## 3. Project layout
 
@@ -76,7 +78,7 @@ app/
 ├── sign-in/[[...sign-in]]/page.tsx
 ├── sitemap.ts / robots.ts     # public pages only
 └── not-found.tsx
-proxy.ts                       # clerkMiddleware (v16 name for middleware.ts)
+proxy.ts                       # clerkMiddleware (the current name for middleware.ts)
 convex/
 ├── schema.ts                  # tables, validators, indexes
 ├── auth.config.ts             # tells Convex to trust Clerk's tokens
@@ -91,8 +93,8 @@ components/                    # shadcn/ui in components/ui
 ```
 
 - `convex/_generated/` holds the typed `api`, `internal`, `components` and `env` objects and the `query`/`mutation`/`action` builders. Always import builders from `./_generated/server`, never from `convex/server`.
-- `proxy.ts` replaced `middleware.ts` in Next.js 16 and runs on the Node.js runtime. Clerk's docs say to name the file by the Next.js version: `proxy.ts` on 16+.
-- `params` and `searchParams` are Promises in Next.js 16. Await them.
+- The current convention is `proxy.ts` (it replaced `middleware.ts`), running on the Node.js runtime. Clerk's docs name the file by the Next.js version installed; confirm the file name in the bundled Next.js docs and Clerk's quickstart.
+- `params` and `searchParams` are Promises. Await them.
 
 ## 4. Docs and AI files
 
@@ -298,7 +300,7 @@ async function ChecklistLoader({ params }: { params: Promise<{ id: string }> }) 
 | Streaming AI text to the browser | `@convex-dev/persistent-text-streaming` |
 | Data migrations | `@convex-dev/migrations` |
 
-Most are 0.x. Check each component's README for the current API before using it.
+Components change often. Check each component's README for the current API before using it.
 
 ## 12. Payments: Stripe
 
@@ -410,9 +412,9 @@ Vercel builds the Next.js app and, in the same build, deploys the Convex functio
 - Importing builders from `convex/server` instead of `./_generated/server`, or editing `convex/_generated`.
 - Gating paid features only in the UI, or granting access from the Checkout success URL instead of the webhook.
 - Secrets in `NEXT_PUBLIC_` variables, in code, or set only in Vercel when Convex functions read them.
-- `middleware.ts` on Next.js 16 (it's `proxy.ts`); synchronous `params`; `'use client'` on whole pages and layouts.
+- `middleware.ts` where the installed Next.js expects `proxy.ts`; synchronous `params`; `'use client'` on whole pages and layouts.
 - Indexing the signed-in app in Google, or rendering public marketing pages per request.
-- Starting new production apps on Convex Auth while it's in beta; hand-rolled password auth.
+- Starting new production apps on Convex Auth while it's in beta (check its status first); hand-rolled password auth.
 - A second hand-written API in Route Handlers duplicating what Convex functions already do.
 - Shipping with Clerk development keys, Stripe test keys or Resend `testMode` in production.
 - Copying Convex patterns from memory (old `ctx.db.get(id)` without the table name, `crons.daily`, `ctx.storage.getMetadata`) instead of reading the installed guidelines.

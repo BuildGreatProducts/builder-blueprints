@@ -82,7 +82,7 @@ Use this template to write `docs/mobile-app-launch.md`. Tailor it to what was ac
   > Check our RevenueCat paywall against App Store guideline 3.1.2 and REFERENCE.md section 7: list exactly what it must show (prices, periods, trial terms, auto-renewal, Restore, Terms of Use and Privacy Policy links) and the Terms and Privacy URLs to use: <urls>.
   You'll know it worked when: the paywall shows every item on that list on both platforms.
 - [ ] 🧑 Connect the store notifications — 15 min
-  In RevenueCat's App Store app settings, click **Apply in App Store Connect** for Server Notifications (Version 2). In the Play Store app settings, create the Pub/Sub topic, paste its ID into Play Console → Monetize with Play → Monetization setup → Real-time developer notifications, and send a test notification.
+  In RevenueCat's App Store app settings, click **Apply in App Store Connect** for Server Notifications. In the Play Store app settings, create the Pub/Sub topic, paste its ID into Play Console → Monetize with Play → Monetization setup → Real-time developer notifications, and send a test notification.
   You'll know it worked when: RevenueCat shows the test notification as received.
 
 ## Phase 5 — Backend and sign-in in production
@@ -118,7 +118,7 @@ Use this template to write `docs/mobile-app-launch.md`. Tailor it to what was ac
   Paste them in, adding the support URL and privacy policy URL.
   You'll know it worked when: both listings are saved without warnings.
 - [ ] 🧑 Add screenshots and graphics — 1–2 hours
-  App Store: the iPhone size(s) App Store Connect asks for (at last check an iPhone with Dynamic Island, e.g. 1206 × 2622 or 1320 × 2868), plus iPad if supported. Play: a 512 × 512 icon, a 1024 × 500 feature graphic and at least two phone screenshots. Show the magic moment first.
+  App Store: the iPhone size(s) App Store Connect asks for (at the time of writing, an iPhone with Dynamic Island, e.g. 1206 × 2622 or 1320 × 2868; check App Store Connect for the current sizes), plus iPad if supported. Play: a 512 × 512 icon, a 1024 × 500 feature graphic and at least two phone screenshots. Show the magic moment first.
 - [ ] 🤝 Fill in the privacy answers — 30 min
   > List every type of data the app and its SDKs collect (Clerk, RevenueCat, Sentry, PostHog, Convex and any others in package.json), whether it's linked to the user, whether it's used for tracking, and why, so I can answer Apple's App Privacy questions and Google's Data safety form. Include the account deletion web link Google needs.
   Answer both forms from that list.

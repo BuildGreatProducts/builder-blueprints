@@ -1,8 +1,6 @@
 # Mobile App — Reference
 
-> Last verified: 2026-10. Expo, React Native, Clerk and RevenueCat move quickly. Before relying on an API, config key or CLI flag, check the live docs (or Context7): https://docs.expo.dev, https://docs.convex.dev, https://clerk.com/docs/expo, https://www.revenuecat.com/docs, https://developer.apple.com/app-store/review/guidelines/, https://support.google.com/googleplay/android-developer.
->
-> Versions at last check: Expo SDK 57 (`expo` 57.0.x, released 30 June 2026; SDK 58 is in beta with React Native 0.88 RC and lands once 0.88 is stable) · React Native 0.86 · React 19.2 · `expo-router` 57 · TypeScript 6.0 (template default) · `convex` 1.46 · `@clerk/expo` 4.8 (supports Expo SDK 54–57) · `react-native-purchases` and `react-native-purchases-ui` 10.11 · `eas-cli` 24.11 · `@sentry/react-native` 8.29 · `posthog-react-native` 4.79 · `jest-expo` 57 · `@testing-library/react-native` 14 · `convex-test` 0.0.60 with `vitest` 5 · `@convex-dev/expo-push-notifications` 0.3.
+> **Staying current.** Expo, React Native, Clerk and RevenueCat move quickly, so this reference describes conventions, not versions. Start new projects with `npx create-expo-app@latest` so they get the current Expo SDK. Before writing code, check what's installed (`package.json`, `npx expo-doctor`, `npm view <pkg> version`). Before relying on an API, config key or CLI flag, read the docs for the installed version (or Context7): Expo's docs for the installed SDK (https://docs.expo.dev), https://docs.convex.dev, https://clerk.com/docs/expo, https://www.revenuecat.com/docs, https://developer.apple.com/app-store/review/guidelines/, https://support.google.com/googleplay/android-developer. When this reference and the installed version's docs disagree, the docs win. Prefer stable releases over betas and release candidates, and don't move to a new Expo SDK until your auth and payments SDKs (Clerk, RevenueCat) support it.
 
 ## Contents
 1. Default stack
@@ -45,7 +43,7 @@ One default. Change a line only when the brief clearly calls for it.
 | Product analytics | PostHog (`posthog-react-native`) for the first-session funnel; RevenueCat Charts for revenue | — |
 | Tests | Jest (`jest-expo`) + React Native Testing Library; `convex-test` + Vitest for Convex; Maestro for end-to-end flows | — |
 
-**Why Clerk is the default:** Convex's own auth docs still list Convex Auth as beta (*"it isn't complete and may change in backward-incompatible ways"*) and recommend a third-party provider for the most complete solution, naming Clerk for React Native. Clerk has an Expo-first SDK with native Sign in with Apple and Google, native sign-in screens, and a one-click Convex integration. Re-check this if Convex starts recommending its own auth for Expo.
+**Why Clerk is the default:** Convex's own auth docs recommend a third-party provider for the most complete solution, naming Clerk for React Native. Clerk has an Expo-first SDK with native Sign in with Apple and Google, native sign-in screens, and a one-click Convex integration. Check Convex's current auth docs: if they mark Convex Auth stable and recommend it for Expo, reconsider.
 
 ## 2. Project setup and the development build
 
@@ -58,12 +56,12 @@ eas init && eas build:configure    # creates the EAS project (projectId) and eas
 eas build --profile development --platform ios      # or android, or all
 ```
 
-- `create-expo-app` gives the default template: TypeScript, Expo Router with routes in `src/app/`, native tabs, typed routes, and the React Compiler on (`experiments.reactCompiler: true`). Keep the compiler on and don't hand-write `useMemo`/`useCallback` everywhere.
-- **The New Architecture is always on** from SDK 55. Every native library you add must support it; check its README first.
-- **Use a development build, not Expo Go.** Expo Go only contains Expo's own native modules, now needs a login, and isn't meant for production apps. RevenueCat, Clerk's native sign-in, Sign in with Apple and push notifications need your own native code. (`react-native-purchases` detects Expo Go and switches to a *Preview API Mode* with JavaScript mocks: screens load, but nothing can be bought.)
+- `create-expo-app` gives the default template: TypeScript, Expo Router with routes in `src/app/`, native tabs, typed routes, and the React Compiler on (`experiments.reactCompiler: true`; check the generated project and the installed SDK's docs, since the template and this key change between SDKs). Keep the compiler on and don't hand-write `useMemo`/`useCallback` everywhere.
+- **The New Architecture is always on** in current SDKs. Every native library you add must support it; check its README first.
+- **Use a development build, not Expo Go.** Expo Go only contains Expo's own native modules, needs a login, and isn't meant for production apps. RevenueCat, Clerk's native sign-in, Sign in with Apple and push notifications need your own native code. (`react-native-purchases` detects Expo Go and switches to a *Preview API Mode* with JavaScript mocks: screens load, but nothing can be bought.)
 - Install the development build from the link EAS prints, run `npx expo start`, and the app loads your code from your computer. Rebuild only when native code changes. iPhones need registering first (`eas device:create`) and Developer Mode switched on.
 - Always add native packages with `npx expo install <package>` so versions match the SDK. Run `npx expo-doctor` after every install and before every build.
-- Upgrading the SDK: one major version at a time, with `npx expo install expo@^<next> --fix`, then read that SDK's changelog. Check your auth and payments SDKs support the new version first (e.g. `@clerk/expo` 4.8 lists Expo `<58` as its supported range).
+- Upgrading the SDK: one major version at a time, with `npx expo install expo@^<next> --fix`, then read that SDK's changelog. Check your auth and payments SDKs support the new version first (their changelogs and the Expo range in their peer dependencies say so).
 
 ## 3. Project layout and navigation
 
@@ -83,13 +81,13 @@ convex/
 assets/  .maestro/  app.config.ts  eas.json  .env.local  .env.example
 ```
 
-- `_layout.tsx` files define navigators: `Stack`, `Tabs` (JavaScript tab bar) or `NativeTabs` (the platform's own tab bar; the SDK 57 template imports it from `expo-router/unstable-native-tabs`, and SDK 58 makes it stable). Route groups `(name)` organise files without changing URLs. Older projects keep routes in `app/` at the root; both work, but don't mix them.
+- `_layout.tsx` files define navigators: `Stack`, `Tabs` (JavaScript tab bar) or `NativeTabs` (the platform's own tab bar). Use `NativeTabs` if the installed Expo Router exports it as stable; if it's only available from an `unstable-` import path, use `Tabs`. Route groups `(name)` organise files without changing URLs. Older projects keep routes in `app/` at the root; both work, but don't mix them.
 - Present the paywall as a modal so dismissing it returns the user to where they were. Set `scheme` in the app config so deep links and auth redirects work.
 - Settings holds account deletion, restore, manage subscription, notification choices, and the privacy policy and terms links.
 
 ## 4. Protected routes, guests and onboarding
 
-Use `Stack.Protected` (and `Tabs.Protected`) with a `guard`. When a guard is false, the screen can't be reached and anyone on it is sent to the first available screen. SDK 58 adds a `redirectTo` prop.
+Use `Stack.Protected` (and `Tabs.Protected`) with a `guard`. When a guard is false, the screen can't be reached and anyone on it is sent to the first available screen. Check the installed Expo Router's docs for any extra options (such as choosing where to redirect).
 
 ```tsx
 // src/app/_layout.tsx
@@ -225,7 +223,7 @@ export default {
 
 `npx convex env set CLERK_FRONTEND_API_URL <Clerk Frontend API URL>` for each deployment (dev and prod use different Clerk instances).
 
-**Sign-in screens:** default to Clerk's native `<AuthView />` (`@clerk/expo/native`), which handles email codes, Sign in with Apple and Sign in with Google with native UI. It needs a development build and iOS 17 or later. For a fully custom screen, use `useSignInWithApple()` from `@clerk/expo/apple` (with `expo-apple-authentication` and `expo-crypto`) and `useSignInWithGoogle()` from `@clerk/expo/google`, following Clerk's Expo guide for each. Set `ios.usesAppleSignIn: true` in the app config.
+**Sign-in screens:** default to Clerk's native `<AuthView />` (`@clerk/expo/native`), which handles email codes, Sign in with Apple and Sign in with Google with native UI. It needs a development build and a minimum iOS version; check Clerk's Expo docs for the current one and set the deployment target to match. For a fully custom screen, use `useSignInWithApple()` from `@clerk/expo/apple` (with `expo-apple-authentication` and `expo-crypto`) and `useSignInWithGoogle()` from `@clerk/expo/google`, following Clerk's Expo guide for each. Set `ios.usesAppleSignIn: true` in the app config.
 
 **Users in Convex:** after sign-in, call a `users.store` mutation that finds or creates the `users` row by `identity.tokenIdentifier`. Then call `Purchases.logIn(user._id)` (section 8).
 
@@ -233,7 +231,7 @@ export default {
 
 **Production:** a Clerk production instance needs a domain you own (it adds DNS records), its own `pk_live_` key, and your own Apple and Google credentials for social sign-in. Register the native apps (bundle ID, Team ID, package name, signing certificate fingerprint) where Clerk's guides say.
 
-**The alternative — no third-party auth service:** Better Auth through its Convex component (`@convex-dev/better-auth` with `@better-auth/expo`). Users then live in your Convex database and there's no per-user bill, but you build and maintain more of the sign-in UI yourself, including native Sign in with Apple. Convex Auth (`@convex-dev/auth`) is still beta; don't start new production apps on it.
+**The alternative — no third-party auth service:** Better Auth through its Convex component (`@convex-dev/better-auth` with `@better-auth/expo`). Users then live in your Convex database and there's no per-user bill, but you build and maintain more of the sign-in UI yourself, including native Sign in with Apple. Don't start new production apps on Convex Auth (`@convex-dev/auth`) while Convex's docs describe it as beta.
 
 ## 7. Store rules that shape the build
 
@@ -245,7 +243,7 @@ Read the current wording before review: https://developer.apple.com/app-store/re
 - **In-app purchase for digital features (Apple 3.1.1, Google Play Payments policy).** Unlocking features or content inside the app must use the store's in-app purchase. In the United States storefront, apps may also link to their own website checkout; elsewhere, don't. Physical goods and real-world services are exempt.
 - **Subscriptions (Apple 3.1.2).** At least seven days long, working on all the user's devices, with ongoing value. Before asking anyone to subscribe, the paywall must make clear: the subscription's name, what they get, the length of each period, the price (and the price after any trial or intro offer, and when it starts), that it renews automatically until cancelled, a **Restore Purchases** control, and working links to the **Terms of Use (EULA)** and **Privacy Policy**. The price must be the most prominent number; don't make the trial bigger than the price.
 - **Privacy policy (Apple 5.1.1(i)).** Linked in the store metadata and inside the app, saying what's collected, by which third parties (Clerk, RevenueCat, Sentry, PostHog…), how long it's kept, and how to delete it.
-- **Build requirements.** App Store uploads must be built with Xcode 26 and the iOS 26 SDK or later (EAS uses current images). Google Play submissions from 31 August 2026 must target Android 16 (API level 36); current Expo SDKs do.
+- **Build requirements.** Apple raises the minimum Xcode and iOS SDK for uploads, and Google raises the minimum target API level, every year. Check the current requirement in App Store Connect's and Play Console's "upcoming requirements" pages before building for release. A current Expo SDK built on EAS's default images usually meets both; an old SDK may not.
 
 ## 8. Payments: RevenueCat
 
@@ -276,7 +274,7 @@ export function configurePurchases() {
 - Use offerings and placements (`Purchases.getOfferings()`, `getCurrentOfferingForPlacement`) to change prices and paywalls from the dashboard without a release.
 
 **Store setup** (details in `LAUNCH.md`):
-- **Apple:** the Paid Applications Agreement, tax and banking in App Store Connect; a subscription group with monthly and annual subscriptions (each with a review screenshot); an **In-App Purchase Key** (.p8) uploaded to RevenueCat (required for StoreKit 2, or purchases aren't recorded); App Store Server Notifications V2 pointed at RevenueCat (one click, *Apply in App Store Connect*, in the RevenueCat app settings).
+- **Apple:** the Paid Applications Agreement, tax and banking in App Store Connect; a subscription group with monthly and annual subscriptions (each with a review screenshot); an **In-App Purchase Key** (.p8) uploaded to RevenueCat (required, or purchases aren't recorded); App Store Server Notifications (the version RevenueCat's docs ask for) pointed at RevenueCat (one click, *Apply in App Store Connect*, in the RevenueCat app settings).
 - **Google:** a merchant account; subscriptions with base plans and offers in Play Console (you can only create them after uploading a build that contains the billing library); a Google Cloud service account with Play Console access whose JSON key goes into RevenueCat; Real-time Developer Notifications via the Pub/Sub topic RevenueCat creates.
 - Commission: 15% for most small developers (Apple's Small Business Program, which you apply for; Google's 15% on subscriptions and on the first $1M a year), 30% otherwise.
 
@@ -307,7 +305,7 @@ export default http
 ```
 
 - In RevenueCat → Integrations → Webhooks, set the URL to `https://<deployment>.convex.site/revenuecat` and the **Authorization header** to a long random value, stored in Convex as `REVENUECAT_WEBHOOK_AUTH`. For extra protection, turn on HMAC webhook signing and verify the `X-RevenueCat-Webhook-Signature` header: HMAC-SHA256 over `<timestamp>.<raw body>` with the signing secret, using Web Crypto, before parsing the JSON, rejecting timestamps older than five minutes.
-- `recordEvent` (an internal mutation) skips event IDs it has seen (RevenueCat retries, up to five times) and schedules `internal.billing.syncCustomer`. That action calls RevenueCat's REST API for the customer (`GET /v1/subscribers/{app_user_id}` with the secret key in `REVENUECAT_SECRET_KEY`, as RevenueCat recommends) and writes the current state of each entitlement. Syncing the whole customer is simpler and safer than interpreting each event type.
+- `recordEvent` (an internal mutation) skips event IDs it has seen (RevenueCat retries, up to five times) and schedules `internal.billing.syncCustomer`. That action calls RevenueCat's REST API for the customer (the customer or subscriber endpoint in RevenueCat's current API docs, with the secret key in `REVENUECAT_SECRET_KEY`, as RevenueCat recommends) and writes the current state of each entitlement. Syncing the whole customer is simpler and safer than interpreting each event type.
 - Respond 200 quickly; anything else counts as a failure. Resolve `app_user_id` to a user with `ctx.db.normalizeId('users', id)` and ignore anonymous IDs (they'll arrive again after `logIn`).
 - Don't drop `SANDBOX` events in production: App Review and TestFlight testers buy in sandbox against your production backend. Store the environment instead.
 - A `requireEntitlement(ctx, user, 'pro')` helper reads the table in every paid mutation and query. In mutations, also check `expiresAt` against `Date.now()`.
@@ -326,7 +324,7 @@ For each: the paywall shows the right prices, the entitlement unlocks the featur
 - Ask permission when the user switches on something that needs it, after explaining the value on your own screen first. On Android, create a notification channel before asking.
 - Get the token with `Notifications.getExpoPushTokenAsync({ projectId })`, where `projectId` comes from `Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId`. Send it to a Convex mutation that records it for the signed-in user.
 - Send from Convex with the `@convex-dev/expo-push-notifications` component (`app.use(pushNotifications)` in `convex/convex.config.ts`): `recordToken`, `sendPushNotification`, and pause and resume per user. It batches calls to Expo's push service and retries. Trigger sends from mutations, scheduled functions or crons.
-- Credentials: EAS creates the Apple push key when you build (or via `eas credentials`); Android needs Firebase Cloud Messaging V1 credentials uploaded to EAS. Test with a real device and Expo's push notifications tool.
+- Credentials: EAS creates the Apple push key when you build (or via `eas credentials`); Android needs Firebase Cloud Messaging credentials (the kind Expo's push docs currently ask for) uploaded to EAS. Test with a real device and Expo's push notifications tool.
 - Remove a user's tokens on sign-out and account deletion. Let users choose which notifications they get in Settings.
 
 ## 12. Device features, permissions and privacy
@@ -375,7 +373,7 @@ export default (): ExpoConfig => ({
 ```json
 // eas.json
 {
-  "cli": { "version": ">= 24.0.0", "appVersionSource": "remote" },
+  "cli": { "version": ">= <your eas-cli version>", "appVersionSource": "remote" },
   "build": {
     "development": {
       "developmentClient": true, "distribution": "internal",
@@ -391,6 +389,7 @@ export default (): ExpoConfig => ({
 - **Bundle ID and package name are permanent** once the app is in a store. `npx expo config --type public` prints the config the app will ship with; check names, IDs, permissions and plugins there.
 - **Environment variables:** `EXPO_PUBLIC_` values are inlined into the JavaScript bundle and readable by anyone. Store per-environment values in EAS (`eas env:set`, `eas env:list`, `eas env:pull --environment development` for local `.env.local`), with each build profile's `environment` choosing the set. EAS *secret* visibility protects values used during the build (e.g. `SENTRY_AUTH_TOKEN`), not values you put in the app. Server secrets (`REVENUECAT_SECRET_KEY`, `CLERK_SECRET_KEY`, `REVENUECAT_WEBHOOK_AUTH`) belong in Convex, not EAS.
 - **Build and submit:** `eas build --profile production --platform all`, then `eas submit --platform ios` and `eas submit --platform android` (or `--auto-submit` on the build). EAS manages signing credentials; let it. Google requires the very first Android upload to be done by hand in Play Console. `eas submit` needs an App Store Connect API key (EAS can create it) and a Google service account JSON key.
+- `cli.version` is the minimum `eas-cli` the project needs; `eas build:configure` fills it in from the installed CLI.
 - `appVersionSource: "remote"` with `autoIncrement` lets EAS manage build numbers; you change `version` for each store release.
 
 ## 15. EAS Update
@@ -427,7 +426,7 @@ export default (): ExpoConfig => ({
 **Google Play Console**
 - App icon 512 × 512 PNG, feature graphic 1024 × 500, at least two phone screenshots (four or more at 1080 px recommended).
 - Data safety form (including the account deletion web link), content rating questionnaire, target audience, ads declaration, and app access instructions with a demo login.
-- **New personal developer accounts** (created after 13 November 2023) must run a closed test with at least 12 testers opted in for the last 14 days in a row before production access is granted. Organisation accounts are exempt. Start this as soon as there's a usable build.
+- **New personal developer accounts:** at the time of writing, they must run a closed test with at least 12 testers opted in for the last 14 days in a row before production access is granted, and organisation accounts are exempt. Check the current rule in Play Console. Start this as soon as there's a usable build.
 
 ## 19. Patterns to avoid
 

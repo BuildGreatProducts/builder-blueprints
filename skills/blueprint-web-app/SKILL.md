@@ -80,7 +80,7 @@ Close the interview by playing back the whole design in one compact block (job, 
 1. <step> 2. <step> 3. <step> … · Magic moment: <the instant they get value> · Tracked as: <analytics event>
 
 ## Stack
-Next.js 16 (App Router) + Convex · Auth: <Clerk> · Payments: <Stripe via @convex-dev/stripe / none> · Email: <Resend via @convex-dev/resend / none> · Host: Vercel + Convex Cloud
+Next.js (App Router) + Convex · Auth: <Clerk> · Payments: <Stripe via @convex-dev/stripe / none> · Email: <Resend via @convex-dev/resend / none> · Host: Vercel + Convex Cloud
 
 ## Data model
 | Table | Key fields | Belongs to | Indexes | Expected size |

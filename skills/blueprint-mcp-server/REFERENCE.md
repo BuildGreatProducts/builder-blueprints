@@ -1,23 +1,12 @@
 # MCP Server — Reference
 
-> Last verified: 2026-10. MCP changed a lot in 2026. Before relying on an API, option, or command, check the live docs: https://modelcontextprotocol.io/specification/latest, https://ts.sdk.modelcontextprotocol.io/v2/, https://py.sdk.modelcontextprotocol.io/, https://github.com/vercel/mcp-handler, https://developers.cloudflare.com/agents/model-context-protocol/.
->
-> Versions at last check:
-> - MCP spec **2026-07-28** (previous: 2025-11-25)
-> - TypeScript SDK `@modelcontextprotocol/server` **2.3.x** and adapters `@modelcontextprotocol/express` / `hono` / `fastify` / `node` **2.0.x**. ESM, Node 20+. Zod **4**
-> - `mcp-handler` **2.2.x** (needs SDK ^2 and Node 20+)
-> - Cloudflare Agents SDK `agents` **0.26.x**, `@cloudflare/workers-oauth-provider` **1.2.x**
-> - Python SDK `mcp` **2.3.x** (Python 3.10+). Standalone `fastmcp` **4.0.x**
-> - MCP Inspector **2.9.x** (needs Node 22.19+)
-> - MCP Apps: `@modelcontextprotocol/ext-apps` **2.0.x**, extension spec **2026-01-26**
-> - MCP Bundles: `@anthropic-ai/mcpb` CLI **2.1.x**, `manifest_version` **0.3**
-> - MCP Registry: `mcp-publisher` from registry release **1.8.x**
+> **Staying current.** MCP and its SDKs change often, and spec revisions can be breaking. Install the latest stable SDK, then check what's actually installed (`package.json` or `npm view <pkg> version`, `pip show mcp`) and the Node or Python version it needs. Before relying on a capability, transport or auth flow, read the current spec revision and the SDK's docs: https://modelcontextprotocol.io/specification/latest, https://github.com/modelcontextprotocol/typescript-sdk (its README links the docs for the current release; the docs site's root may still show an older major), https://py.sdk.modelcontextprotocol.io/, https://github.com/vercel/mcp-handler, https://developers.cloudflare.com/agents/model-context-protocol/, or Context7 if available. When this reference and the current spec or SDK docs disagree, the docs win. Check which spec revision your target clients support, and confirm the revision they negotiate when you test.
 
 Anthropic also publishes a general `mcp-builder` skill covering MCP server development in several languages. This blueprint is the opinionated end-to-end path: interview, one recommended architecture, build, audit, launch.
 
 ## Contents
 1. Default approach
-2. What changed in 2026
+2. The current spec and the older generation
 3. Architecture decision path
 4. Serving recipes
 5. Designing tools
@@ -35,14 +24,14 @@ Anthropic also publishes a general `mcp-builder` skill covering MCP server devel
 
 - **Embed when there's an app.** Serve MCP from the app the user already runs, at `/mcp` on its own domain. It reuses the app's data layer, permission checks, auth and deploys.
 - **Remote and stateless by default.** Streamable HTTP, a fresh server instance per request, nothing kept in memory between requests. Go local (stdio) only when the server must touch the user's own machine.
-- **TypeScript SDK v2** unless the app is Python. Register everything inside a factory function.
+- **The official TypeScript SDK** (latest stable) unless the app is Python. Register everything inside a factory function.
 - **Few, outcome-shaped tools.** 3–7 tools that each finish a job the user would ask for, not one tool per API endpoint.
 - **Annotate everything.** Every tool has a `title`, accurate hints, a description that says when to use it, and `.describe()` on every input.
 - **OAuth with the app's existing identity provider** for anything that touches user data remotely. The MCP server verifies tokens; it never issues them unless it has to.
 
-## 2. What changed in 2026
+## 2. The current spec and the older generation
 
-The 2026-07-28 spec is a breaking redesign. Code written for the 2025 generation (`@modelcontextprotocol/sdk`, `server.tool(...)`, `StreamableHTTPServerTransport` + `connect()`, session maps, SSE endpoints) is the old way. Migrate with the SDK's codemod and upgrade guide (https://ts.sdk.modelcontextprotocol.io/v2/ → Migration).
+The current spec is a breaking redesign of the earlier protocol. Code written for the older generation (`@modelcontextprotocol/sdk`, `server.tool(...)`, `StreamableHTTPServerTransport` + `connect()`, session maps, SSE endpoints) is the old way. Migrate with the SDK's codemod and upgrade guide (linked from https://github.com/modelcontextprotocol/typescript-sdk). The details below are the current conventions; confirm any you rely on against the current spec revision, since this is the part most likely to move.
 
 - **Stateless core.** No `initialize` handshake and no `Mcp-Session-Id`. Every request carries its protocol version and client capabilities in `_meta`. Servers must implement `server/discover` (the SDK does this for you).
 - **State lives in handles.** Anything that must survive between calls is a server-minted ID passed back as an ordinary tool argument (e.g. `draft_id`), backed by your own storage.
@@ -50,11 +39,11 @@ The 2026-07-28 spec is a breaking redesign. Code written for the 2025 generation
 - **Notifications.** `subscriptions/listen` (one long-lived POST stream) replaces the GET stream and `resources/subscribe`. Progress still flows on the request's own response stream. SSE resumability (`Last-Event-ID`) is gone.
 - **HTTP headers.** `Mcp-Method` and `Mcp-Name` are required on Streamable HTTP POSTs (the SDKs set them).
 - **Caching.** List and read results carry `ttlMs` and `cacheScope`. Return tools in a deterministic order so clients and prompt caches can reuse them.
-- **Schemas.** `inputSchema` and `outputSchema` accept any JSON Schema 2020-12. `structuredContent` can be any JSON value.
+- **Schemas.** `inputSchema` and `outputSchema` accept full JSON Schema (check the current spec for the default dialect). `structuredContent` can be any JSON value.
 - **Logging.** `logging/setLevel` and `ping` are removed. Log level travels per request in `_meta`.
 - **Deprecated** (still work, don't adopt): Roots, Sampling, Logging (use stderr or OpenTelemetry), the HTTP+SSE transport, and Dynamic Client Registration (replaced by Client ID Metadata Documents).
 - **Extensions.** Tasks (`io.modelcontextprotocol/tasks`) for long-running work, and MCP Apps (`io.modelcontextprotocol/ui`) for interactive UI.
-- **Old clients still connect.** The TypeScript SDK's entry points serve 2025-era clients from the same factory by default (stateless on HTTP), so one server works for both generations.
+- **Old clients still connect.** The TypeScript SDK's entry points serve clients on older protocol revisions from the same factory by default (stateless on HTTP), so one server works for both generations. Confirm this in the SDK docs if your target clients lag behind.
 
 ## 3. Architecture decision path
 
@@ -127,7 +116,7 @@ app.all('/mcp', (c: Context) => handler.fetch(c.req.raw, { parsedBody: c.get('pa
 export default app;
 ```
 
-`handler.fetch` is a web-standard `(Request) => Promise<Response>`, so on any fetch runtime `export default handler` also works (put Host/Origin checks in front, see §9). Options worth knowing: `responseMode: 'json'` (never stream) and `legacy: 'reject'` (refuse 2025-era clients). Defaults are right for most servers.
+`handler.fetch` is a web-standard `(Request) => Promise<Response>`, so on any fetch runtime `export default handler` also works (put Host/Origin checks in front, see §9). Options worth knowing: `responseMode: 'json'` (never stream) and `legacy: 'reject'` (refuse clients on older protocol revisions). Defaults are right for most servers.
 
 ### Next.js — `mcp-handler`
 
@@ -152,7 +141,7 @@ const handler = createMcpHandler((server) => {
 export { handler as GET, handler as POST };
 ```
 
-Install: `npm install mcp-handler@^2 @modelcontextprotocol/server@^2 zod@^4`. The route path is a convention; the client URL is `https://<app>/api/mcp`. Version 2 has no `[transport]` route, Redis or SSE. In handlers, the caller is `ctx.http?.authInfo`. Wrap with `withMcpAuth` for OAuth (§8). Note `mcp-handler`'s callback receives the server to register on; the SDK's factory returns one.
+Install: `npm install mcp-handler @modelcontextprotocol/server zod`, and check `mcp-handler`'s README for the SDK and Zod versions it pairs with. The route path is a convention; the client URL is `https://<app>/api/mcp`. The current `mcp-handler` has no `[transport]` route, Redis or SSE; older guides that show them are out of date. In handlers, the caller is `ctx.http?.authInfo`. Wrap with `withMcpAuth` for OAuth (§8). Note `mcp-handler`'s callback receives the server to register on; the SDK's factory returns one.
 
 ### Cloudflare Workers — Agents SDK
 
@@ -201,10 +190,10 @@ The model sees only each tool's name, title, description, input schema and annot
 - **Description:** what it does, **when to use it** (and when not to), what it returns, and any limits. Write it for a smart new colleague. The first sentence carries the most weight.
 - **Inputs:** `.describe()` on every field. Use enums for fixed choices, defaults for optional fields, and accept human identifiers (names, emails) rather than internal IDs where you can resolve them.
 
-### Registering a tool (TypeScript SDK v2)
+### Registering a tool (TypeScript SDK)
 
 ```ts
-import * as z from 'zod/v4';
+import * as z from 'zod'; // use the Zod version the SDK's peer dependency names
 
 server.registerTool(
     'acme_search_invoices',
@@ -258,7 +247,7 @@ Every tool needs a `title` and at least the read-only or destructive hint. Anthr
 
 - **Resources** are read-only data the client can attach as context (docs, schemas, records by URI). Use them for reference material, not for actions. Most servers launch with tools only.
 - **Prompts** are user-chosen templates (often shown as slash commands). Add one only for a workflow users will pick deliberately.
-- **MCP Apps** (`io.modelcontextprotocol/ui`) let one tool render interactive HTML in the chat, in a sandboxed iframe. Supported by Claude (web and desktop), VS Code Copilot, Goose and others; other clients just see the text result, so the text must stand alone.
+- **MCP Apps** (`io.modelcontextprotocol/ui`) let one tool render interactive HTML in the chat, in a sandboxed iframe. Supported by Claude (web and desktop), VS Code Copilot, Goose and others (check each target client's current support); other clients just see the text result, so the text must stand alone.
   - The UI is a resource with a `ui://` URI and MIME type `text/html;profile=mcp-app`, usually one bundled HTML file.
   - The tool links to it in its definition with `_meta: { ui: { resourceUri: 'ui://acme/invoice-dashboard' } }` (the older flat `_meta["ui/resourceUri"]` is deprecated).
   - The resource's `_meta.ui.csp` lists external origins the page may load from; `_meta.ui.permissions` requests things like the camera.
@@ -293,7 +282,7 @@ async ({ invoiceId }, ctx): Promise<CallToolResult | InputRequiredResult> => {
 - Elicitation schemas must be flat objects of primitives (strings, numbers, booleans, enums).
 - `inputRequired.elicitUrl({ message, url })` sends the user to a URL (e.g. to connect a third-party account) instead of a form.
 - `ctx.mcpReq.inputResponses` is client input: always validate it (`acceptedContent` does, with the schema you pass).
-- The legacy shim serves the same handler to 2025-era clients by pushing a real elicitation request.
+- The legacy shim serves the same handler to clients on older protocol revisions by pushing a real elicitation request.
 - Sampling and roots builders exist but are deprecated. Don't use them in new servers.
 
 ### `requestState` across rounds
@@ -321,7 +310,7 @@ For state that spans separate tool calls (a draft, an upload, a long job), mint 
 |---|---|
 | Local stdio server acting as the user | None for local data. For third-party APIs, an API key from an environment variable, supplied by the client config or the `.mcpb` sensitive user config |
 | Remote, public data only | None. Add rate limits |
-| Remote, internal tool for one team | OAuth with the team's identity provider. A static API key header works in Claude Code, Cursor and VS Code, but in Claude's hosted apps only as a limited beta |
+| Remote, internal tool for one team | OAuth with the team's identity provider. A static API key header works in Claude Code, Cursor and VS Code, but check current support in Claude's hosted apps before relying on it |
 | Remote, the app's users and their data | OAuth with the app's existing identity provider |
 
 ### OAuth model (remote servers)
@@ -331,7 +320,7 @@ For state that spans separate tool calls (a draft, an upload, a long job), mint 
 - **Audience:** accept only tokens issued for this server (the `aud`/resource matches the MCP URL). Reject everything else.
 - **No token passthrough.** Never forward the client's token to downstream APIs. Use the server's own credentials, scoped to the verified user.
 - **Scopes:** gate the endpoint with required scopes, and step up per tool for sensitive actions.
-- **Client registration:** the 2026 spec prefers Client ID Metadata Documents (CIMD) over Dynamic Client Registration (DCR). Claude uses CIMD only when the authorisation server metadata advertises `"client_id_metadata_document_supported": true` and `"none"` in `token_endpoint_auth_methods_supported`, otherwise it falls back to DCR. Support CIMD, and keep DCR on if the provider offers it.
+- **Client registration:** the current spec prefers Client ID Metadata Documents (CIMD) over Dynamic Client Registration (DCR). Claude uses CIMD only when the authorisation server metadata advertises `"client_id_metadata_document_supported": true` and `"none"` in `token_endpoint_auth_methods_supported`, otherwise it falls back to DCR. Support CIMD, and keep DCR on if the provider offers it.
 - **Redirect URIs to allow:** `https://claude.ai/api/mcp/auth_callback` for Claude's hosted apps, and loopback `http://localhost/callback` and `http://127.0.0.1/callback` on **any port** for Claude Code and other native clients. Add each other target client's documented callback.
 - **PKCE S256** must be supported and advertised. The token endpoint must accept `application/x-www-form-urlencoded`. Rotate refresh tokens and return `invalid_grant` when one is no longer valid.
 
@@ -351,7 +340,7 @@ app.use(mcpAuthMetadataRouter({ oauthMetadata, resourceServerUrl: mcpServerUrl }
 app.all('/mcp', auth, (req, res) => void node(req, res, req.body));
 ```
 
-Handlers read the caller as `ctx.http?.authInfo` (undefined over stdio). On fetch runtimes, `requireBearerAuth` and `oauthMetadataResponse` from `@modelcontextprotocol/server` do the same with web-standard requests. Upgrade `@modelcontextprotocol/express` together with the server package: early 2.0.x adapters ignored `expectedResource`. Per-tool scopes: `scopeChallenge: requireScopes('invoices:write')` in the tool config. Full guide: https://ts.sdk.modelcontextprotocol.io/v2/ → Serving → Authorization.
+Handlers read the caller as `ctx.http?.authInfo` (undefined over stdio). On fetch runtimes, `requireBearerAuth` and `oauthMetadataResponse` from `@modelcontextprotocol/server` do the same with web-standard requests. Upgrade `@modelcontextprotocol/express` together with the server package (some earlier adapter releases ignored `expectedResource`), and test that a token issued for another resource is rejected. Per-tool scopes: `scopeChallenge: requireScopes('invoices:write')` in the tool config. Full guide: the SDK docs for the current release (linked from https://github.com/modelcontextprotocol/typescript-sdk) → Serving → Authorization.
 
 **Next.js:** `withMcpAuth(handler, verifyToken, { required: true, requiredScopes: [...], resourceMetadataPath: '/.well-known/oauth-protected-resource' })`, plus `protectedResourceHandler` at `app/.well-known/oauth-protected-resource/route.ts`. See `docs/AUTHORIZATION.md` in the `mcp-handler` repo.
 
@@ -370,7 +359,7 @@ Handlers read the caller as `ctx.http?.authInfo` (undefined over stdio). On fetc
 
 ## 10. Testing
 
-- **MCP Inspector** (supports the 2026 spec):
+- **MCP Inspector** (use the latest release so it speaks the current spec):
   - Web UI: `npx @modelcontextprotocol/inspector`, then enter the URL (`http://localhost:3000/mcp`) or a stdio command. Use it to list and call every tool, including bad inputs.
   - Scriptable smoke test: `npx @modelcontextprotocol/inspector --cli --transport http --server-url <url> --method tools/list`, or `npx @modelcontextprotocol/inspector --cli node build/index.js --method tools/list` for stdio. Pin the version in CI.
 - **In-memory tests:** the SDK docs' "Test a server" page wires a `Client` to your server in-process, ideal for unit tests of each tool.
@@ -422,7 +411,7 @@ Semver in the server's `version`, `package.json`, `server.json` and `manifest.js
 
 - One tool per REST endpoint, or 30+ tools. The model picks badly and context fills up.
 - Vague descriptions ("Gets data"), missing `.describe()` on inputs, or internal IDs as the only way to name things.
-- Code from the 2025 SDK generation: `@modelcontextprotocol/sdk` imports, `server.tool(...)`, session maps keyed by `Mcp-Session-Id`, SSE endpoints, Redis for sessions, Cloudflare `McpAgent` for new servers.
+- Code from the older SDK generation: `@modelcontextprotocol/sdk` imports, `server.tool(...)`, session maps keyed by `Mcp-Session-Id`, SSE endpoints, Redis for sessions, Cloudflare `McpAgent` for new servers.
 - Keeping user state in server memory between requests. Use handles backed by storage.
 - Pushing elicitation or sampling from the server (`elicitInput`, `requestSampling`). Return `inputRequired` instead.
 - Adopting deprecated features: Roots, Sampling, the Logging capability, HTTP+SSE, DCR-only auth.
