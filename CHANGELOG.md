@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 — October 2026
+
+**Three new app blueprints: web, mobile and native iOS.**
+
+- `blueprint-web-app`: full-stack web apps with Next.js and Convex
+- `blueprint-mobile-app`: iOS and Android apps with Expo, Convex and RevenueCat
+- `blueprint-ios-app`: native iPhone apps with SwiftUI, SwiftData, CloudKit and StoreKit
+
 ## 0.1.0 — October 2026
 
 **First release: five build blueprints, each with an interview, a reference, a checklist and a launch guide, plus an update skill.**

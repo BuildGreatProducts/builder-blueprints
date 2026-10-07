@@ -13,6 +13,9 @@ You steer and the agent does the heavy lifting.
 | Blueprint | What it helps you build |
 |---|---|
 | `blueprint-website` | A Next.js website with strong SEO, ready to rank and convert |
+| `blueprint-web-app` | A full-stack web app with Next.js and Convex, ready for real users |
+| `blueprint-mobile-app` | An iOS and Android app with Expo, Convex and RevenueCat subscriptions |
+| `blueprint-ios-app` | A native iPhone app in SwiftUI, built on Apple's own frameworks |
 | `blueprint-ai-plugin` | A Claude Code plugin or set of agent skills, ready to publish |
 | `blueprint-threejs-game` | A browser game in three.js, with a Blender asset pipeline |
 | `blueprint-mcp-server` | An MCP server, either inside your existing app or standalone |
@@ -71,6 +74,9 @@ The folders follow the open [Agent Skills](https://agentskills.io) format, so th
 Just describe what you want to build. For example:
 
 - "Help me build a website for my bakery that ranks on Google"
+- "I want to build a SaaS app where teams can track their projects"
+- "Let's make a habit tracker for iPhone and Android with a subscription"
+- "Build me a native iPhone app for logging my climbs, synced with iCloud"
 - "I want to turn my prompts into a Claude Code plugin"
 - "Let's make a low-poly racing game in the browser"
 - "Add an MCP server to my Next.js app so Claude can manage my tasks"

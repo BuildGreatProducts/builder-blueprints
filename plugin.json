@@ -1,25 +1,26 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "builder-blueprints",
-  "version": "0.1.0",
-  "description": "Builder Blueprints — skills that help AI builders ship real products: a Next.js website with strong SEO, an AI plugin, a Three.js game with Blender assets, an MCP server, and a Node.js API. Each blueprint interviews you, gives your coding agent the best-practice reference to build from, audits the result against a checklist, and writes a launch guide for what you actually built.",
+  "version": "0.2.0",
+  "description": "Builder Blueprints — skills that help AI builders ship real products: a Next.js website with strong SEO, a Next.js + Convex web app, a React Native mobile app with Convex and RevenueCat, a native SwiftUI iOS app, an AI plugin, a Three.js game with Blender assets, an MCP server, and a Node.js API. Each blueprint interviews you, gives your coding agent the best-practice reference to build from, audits the result against a checklist, and writes a launch guide for what you actually built.",
   "author": { "name": "Chris Ashby", "email": "chris@telescope.design", "url": "https://telescope.design" },
   "homepage": "https://github.com/BuildGreatProducts/builder-blueprints",
   "repository": "https://github.com/BuildGreatProducts/builder-blueprints",
   "license": "MIT",
-  "keywords": ["blueprints", "nextjs", "seo", "plugins", "skills", "threejs", "blender", "mcp", "api", "nodejs", "deploy"],
+  "keywords": ["blueprints", "nextjs", "seo", "convex", "react-native", "expo", "revenuecat", "swiftui", "ios", "plugins", "skills", "threejs", "blender", "mcp", "api", "nodejs", "deploy"],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Builder Blueprints",
         "shortDescription": "Interview, reference, checklist and launch guide for what you're building",
-        "longDescription": "Five build blueprints — Next.js website with SEO, AI plugin, Three.js game with Blender assets, MCP server, Node.js API. Each one interviews you, gives your agent the best-practice reference to build from, audits the result against a checklist, and writes a launch guide tailored to what you built.",
+        "longDescription": "Eight build blueprints — Next.js website with SEO, Next.js + Convex web app, React Native mobile app, SwiftUI iOS app, AI plugin, Three.js game with Blender assets, MCP server, Node.js API. Each one interviews you, gives your agent the best-practice reference to build from, audits the result against a checklist, and writes a launch guide tailored to what you built.",
         "developerName": "Chris Ashby",
         "category": "Productivity",
         "capabilities": ["Interactive", "Read", "Write"],
         "websiteURL": "https://github.com/BuildGreatProducts/builder-blueprints",
         "defaultPrompt": [
           "Help me build a website that ranks on Google",
+          "Help me build a subscription app for iPhone and Android",
           "Add an MCP server to my app",
           "Check my API before I launch it",
           "Update my blueprints"
