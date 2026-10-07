@@ -2,7 +2,7 @@
 
 > Last verified: 2026-10. Next.js moves quickly. Before relying on an API, config option or file convention, read the version-matched docs bundled with the project in `node_modules/next/dist/docs/` (the project's `AGENTS.md` points there), or https://nextjs.org/docs. For search guidance: https://developers.google.com/search/docs.
 >
-> Versions at last check: Next.js 16.3 (latest patch 16.3.8; 16.x is Active LTS) · React 19.3 · Node.js 20.9 or later · Tailwind CSS 4.3 · shadcn CLI v4 · Payload 3.x (4.0 in canary) · TypeScript 5.x or 7 (16.3 can type-check with TypeScript 7) · `@opennextjs/cloudflare` 1.x.
+> Versions at last check: Next.js 16.4 (16.4.0, released 6 October 2026; 16.x is Active LTS) · React 19.3 · Node.js 20.9 or later · Tailwind CSS 4.3 · shadcn CLI v4 · Payload 3.x (4.0 in canary) · TypeScript 5.x or 7 (16.3 and later can type-check with TypeScript 7) · `@opennextjs/cloudflare` 1.x.
 
 ## Contents
 1. Default approach
@@ -28,7 +28,7 @@
 
 - **Next.js App Router, TypeScript, Turbopack.** Turbopack is the default for `next dev` and `next build`; no flag needed.
 - **Tailwind CSS v4 + shadcn/ui.** Tailwind v4 is configured in CSS (`@import "tailwindcss";` and `@theme` in `globals.css`); there is no `tailwind.config.js`. shadcn/ui components are copied into the repo, so they're yours to edit.
-- **Static by default.** A website's pages should be prerendered at build time. Only reach for request-time rendering when a page genuinely changes per visitor.
+- **Static by default, and enforced.** A website's pages should be prerendered at build time. New apps have Cache Components on; add `export const ensureStatic = 'navigation'` to the root layout so the build fails if anything would render per request. Only relax it, on the one route that needs it, when a page genuinely changes per visitor.
 - **Content in the repo** as MDX unless non-developers edit regularly (then Sanity; Payload if they want the CMS inside the app).
 - **Vercel** for hosting. Cloudflare Workers via OpenNext as the alternative.
 - **SEO is built in from the first commit,** not added at the end: metadata, sitemap, robots, structured data and performance budgets come before the second page.
@@ -40,7 +40,7 @@ npx create-next-app@latest <name> --yes
 npx shadcn@latest init
 ```
 
-`--yes` accepts the recommended defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` import alias). `create-next-app` also writes `AGENTS.md` and `CLAUDE.md`.
+`--yes` accepts the recommended defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` import alias) and, from 16.4, turns on Cache Components (`cacheComponents: true` and `partialPrefetching: true` in `next.config.ts`). Keep them on. `create-next-app` also writes `AGENTS.md` and `CLAUDE.md`.
 
 ## 2. Project layout
 
@@ -70,7 +70,7 @@ next.config.ts              # redirects, images, MDX
 ```
 
 Notes:
-- Keep one `lib/site.ts` with the canonical site URL (from `NEXT_PUBLIC_SITE_URL`), name and default description. Metadata, sitemap, robots and JSON-LD all read from it.
+- Keep one `lib/site.ts` with the canonical site URL (from `NEXT_PUBLIC_SITE_URL`), name, default description and the date the home page content last changed (`updated`). Metadata, sitemap, robots and JSON-LD all read from it.
 - Route groups `(name)` organise files without changing URLs.
 - `proxy.ts` (the v16 replacement for `middleware.ts`) is rarely needed on a website. Prefer `redirects()` in `next.config.ts`. If you must use it, it runs on the Node.js runtime and the codemod `npx @next/codemod@canary middleware-to-proxy .` migrates old files.
 
@@ -79,6 +79,7 @@ Notes:
 - Every install of `next` ships its docs in `node_modules/next/dist/docs/` (`01-app/` holds getting started, guides and API reference).
 - `create-next-app` writes `AGENTS.md` (and a `CLAUDE.md` that imports it). On existing projects, `next dev` writes or updates a managed block in `AGENTS.md` when it detects a coding agent. Commit it. Put your own project instructions outside the `<!-- BEGIN:nextjs-agent-rules -->` / `<!-- END:nextjs-agent-rules -->` markers.
 - Opting out (`agentRules: false` in `next.config.ts`) is not recommended.
+- To upgrade an existing site, run `npx next@canary upgrade --agent=latest`: it picks the target release and hands the agent the migration guides, codemods and checks.
 - When an error message includes a `Learn more` link to `nextjs.org/docs/messages/...`, read it; those pages are written for agents.
 
 ## 4. Metadata
@@ -133,7 +134,7 @@ import type { MetadataRoute } from 'next'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts()
   return [
-    { url: `${site.url}/`, lastModified: new Date() },
+    { url: `${site.url}/`, lastModified: site.updated }, // a real date, not new Date()
     ...posts.map((p) => ({ url: `${site.url}/blog/${p.slug}`, lastModified: p.updated })),
   ]
 }
@@ -236,13 +237,13 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 
 **MDX in the repo (default)**
 - Packages: `@next/mdx @mdx-js/loader @mdx-js/react @types/mdx`. Wrap the config with `createMDX`, add `md`/`mdx` to `pageExtensions`, and create `mdx-components.tsx` at the project root (required).
-- Store posts in `content/` and render them from `app/blog/[slug]/page.tsx` with `generateStaticParams` and `export const dynamicParams = false` so unknown slugs 404.
+- Store posts in `content/` and render them from `app/blog/[slug]/page.tsx` with `generateStaticParams`, and call `notFound()` when the slug doesn't match a post so unknown slugs 404. Don't export `dynamicParams`: with Cache Components it fails the build.
 - `@next/mdx` doesn't parse frontmatter. Export a `metadata` object from each MDX file, or add `remark-frontmatter` + `remark-mdx-frontmatter`.
 - With Turbopack, pass remark/rehype plugins by name as strings (e.g. `'remark-gfm'`) with serialisable options only.
 - Style long-form content with `@tailwindcss/typography` (`prose`).
 
 **Sanity (when non-developers edit)**
-- Hosted editor and content store; use the official `next-sanity` toolkit. Fetch content in Server Components, tag it, and have a Sanity webhook call a Route Handler that runs `revalidateTag(tag, 'max')` so edits go live without a redeploy. Protect the webhook with a secret.
+- Hosted editor and content store; use the official `next-sanity` toolkit. Fetch content in a `'use cache'` function with `cacheLife('max')` and `cacheTag`, and have a Sanity webhook call a Route Handler that runs `revalidateTag(tag, 'max')` so edits go live without a redeploy. Protect the webhook with a secret.
 - Give editors fields for SEO title, description, slug and share image, with sensible fallbacks.
 
 **Payload (when they want the CMS inside the app)**
@@ -250,14 +251,18 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 
 ## 11. Rendering and caching
 
-- Pages with no request-time APIs (`cookies()`, `headers()`, uncached fetches, `searchParams`) are prerendered at build time. Keep marketing and content pages that way.
-- Dynamic routes with known slugs: `generateStaticParams`.
-- CMS content: tag fetches (`fetch(url, { next: { tags: ['posts'] } })`) and revalidate on publish with `revalidateTag('posts', 'max')`. The one-argument form is deprecated.
-- **Cache Components** (`cacheComponents: true` in `next.config.ts`, with the `'use cache'` directive, `cacheLife` and `cacheTag`) is opt-in. It replaces the old experimental PPR flag and enables Instant Navigations (with `partialPrefetching: true`). Default for a website: leave it off. Turn it on when the site mixes static pages with per-visitor content, and adopt it with the Next.js `next-cache-components-adoption` skill (`npx skills add vercel/next.js --skill next-cache-components-adoption`).
+- **Cache Components is the model.** From 16.4 Next.js recommends it for every app, `create-next-app` turns it on (`cacheComponents: true` with `partialPrefetching: true`), and it becomes the default in Next.js 17. Don't turn it off.
+- **What's static:** components that use only imports, files read at module scope and pure computation are prerendered automatically. Fetches and database calls are *not* cached unless they run inside a `'use cache'` function; give each one a `cacheLife` (e.g. `'max'` for content that changes only when someone publishes).
+- **Enforce it:** `export const ensureStatic = 'navigation'` in `app/layout.tsx` makes `next dev` and `next build` fail on uncached data, `cookies()`, `headers()`, server-side `searchParams`, `connection()` or a short `cacheLife` anywhere in the site. Dynamic routes under it must export `generateStaticParams` returning at least one complete set of params. Use `next build --debug-prerender` for full stack traces.
+- **Dynamic routes:** `generateStaticParams` lists the known slugs (it must return at least one). An unlisted slug is generated on first request, so the page calls `notFound()` when the slug isn't real. `dynamicParams` isn't supported.
+- **No clock or randomness in the shell:** `new Date()`, `Date.now()` and `Math.random()` during prerender fail the build. Use real dates from content, or cache the value.
+- **CMS content:** tag it with `cacheTag('posts')` inside the `'use cache'` function and revalidate on publish with `revalidateTag('posts', 'max')` from the webhook's Route Handler. The one-argument form is deprecated, and `fetch(url, { next: { tags } })` is the old model.
+- **A page that genuinely varies per visitor** (rare on a website): move that route out from under the root `ensureStatic`, put the per-visitor part in its own component inside `<Suspense>`, and keep the rest static.
+- Existing sites on the old model: migrate with the Next.js `next-cache-components-adoption` skill (`npx skills add vercel/next.js --skill next-cache-components-adoption`).
 
 ## 12. International sites
 
-- Only if the brief lists more than one locale. Use a root `[lang]` segment (`app/[lang]/...`); in 16.3, read it anywhere in Server Components with `import { lang } from 'next/root-params'`.
+- Only if the brief lists more than one locale. Use a root `[lang]` segment (`app/[lang]/...`); since 16.3, read it anywhere in Server Components with `import { lang } from 'next/root-params'`.
 - Every page sets `alternates.languages` (hreflang) for all its translations plus `x-default`, and its own canonical. Add the same `alternates.languages` to sitemap entries.
 - Translate the URL slugs and metadata, not just the body. Never auto-redirect by IP; offer a language switcher.
 
@@ -304,4 +309,5 @@ Targets (75th percentile of real visits): **LCP** ≤ 2.5 s, **INP** ≤ 200 ms,
 - Hosting a commercial site on Vercel Hobby.
 - Loading GA4 or other tracking before consent in the UK and EU.
 - Chasing `llms.txt`, "AI chunking" or other GEO tricks instead of better content.
-- Copying API patterns from memory (e.g. synchronous `params`, one-argument `revalidateTag`) instead of reading the bundled docs.
+- Turning Cache Components off, exporting `dynamic`, `revalidate`, `fetchCache` or `dynamicParams` (they fail the build with it on), and per-request rendering sneaking into marketing pages without `ensureStatic` to catch it.
+- Copying API patterns from memory (e.g. synchronous `params`, one-argument `revalidateTag`, `fetch` with `next.tags`) instead of reading the bundled docs.

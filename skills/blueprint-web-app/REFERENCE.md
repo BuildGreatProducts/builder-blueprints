@@ -56,7 +56,7 @@ npx shadcn@latest init
 npm install @clerk/nextjs # or: npx -y clerk@latest init
 ```
 
-- `--yes` accepts the recommended Next.js defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` alias) and writes `AGENTS.md` and `CLAUDE.md`.
+- `--yes` accepts the recommended Next.js defaults (TypeScript, Tailwind, App Router, Turbopack, `@/*` alias), turns on Cache Components (`cacheComponents: true`, `partialPrefetching: true`; the 16.4 default and Next.js's recommendation for every app), and writes `AGENTS.md` and `CLAUDE.md`. Keep Cache Components on; section 10 covers what it means for signed-in pages.
 - `npx convex dev` writes `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` to `.env.local`, creates `convex/`, and offers to install the Convex AI files. Keep it running in a second terminal while building, or run both with `npx convex dev --start 'next dev'`.
 - `npm create convex@latest` has Next.js + Clerk templates, but at last check they still used Next.js 14 and Tailwind 3. Start from `create-next-app` instead.
 
@@ -64,9 +64,10 @@ npm install @clerk/nextjs # or: npx -y clerk@latest init
 
 ```
 app/
-├── layout.tsx                 # <html lang>, fonts, ClerkProvider > ConvexClientProvider, metadataBase
+├── layout.tsx                 # <html lang>, fonts, metadataBase; ClerkProvider > ConvexClientProvider inside <body>
 ├── ConvexClientProvider.tsx   # 'use client': ConvexReactClient + ConvexProviderWithClerk
 ├── (marketing)/               # public, indexed: home, pricing, legal
+│   ├── layout.tsx             # export const ensureStatic = 'navigation'
 │   ├── page.tsx
 │   └── pricing/page.tsx
 ├── (app)/                     # signed in, noindex
@@ -160,7 +161,7 @@ export const rename = mutation({
    } satisfies AuthConfig;
    ```
 4. `app/ConvexClientProvider.tsx` (`'use client'`): create `new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)` and render `<ConvexProviderWithClerk client={convex} useAuth={useAuth}>` (`ConvexProviderWithClerk` from `convex/react-clerk`, `useAuth` from `@clerk/nextjs`).
-5. In `app/layout.tsx`, `<ClerkProvider>` wraps `<ConvexClientProvider>`.
+5. In `app/layout.tsx`, `<ClerkProvider>` wraps `<ConvexClientProvider>`, both inside `<body>` rather than around `<html>`. With Cache Components on, that placement avoids "Uncached data was accessed outside of Suspense" errors; if they still appear, wrap the provider in `<Suspense>` as Clerk's rendering-modes guide (https://clerk.com/docs/guides/development/rendering-modes) describes.
 6. `proxy.ts` exports `clerkMiddleware()` with the matcher from Clerk's quickstart. Use `createRouteMatcher` and `auth.protect()` to send signed-out visitors on `/app` routes to sign-in. This is for user experience only; the real check is in every Convex function.
 
 - In the UI, gate on Convex's view of auth, not just Clerk's: `useConvexAuth()`, or `<Authenticated>`, `<Unauthenticated>` and `<AuthLoading>` from `convex/react`. Clerk can be signed in a moment before Convex has validated the token.
@@ -244,16 +245,25 @@ Mutations can pass their `ctx` to these helpers. To make the check impossible to
 ## 10. Next.js and Convex together
 
 - **Client components** use `useQuery(api.items.list, { checklistId })`, `useMutation` and `useAction`. Results are live: when data changes, every open tab updates. `useQuery` returns `undefined` while loading; pass `"skip"` as the args until you have them.
-- **Server rendering for first paint** where it matters (the dashboard, a shared page): `preloadQuery` in a Server Component and `usePreloadedQuery` in the client component, which then stays live.
+- **Server rendering for first paint** where it matters (the dashboard, a shared page): `preloadQuery` in a Server Component and `usePreloadedQuery` in the client component, which then stays live. With Cache Components on, anything that reads the request (`params`, Clerk's `auth()`, an uncached Convex call) goes in an async component inside `<Suspense>`, so the app shell around it still prerenders:
 
 ```tsx
 // app/(app)/checklists/[id]/page.tsx
+import { Suspense } from "react";
 import { preloadQuery } from "convex/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<ChecklistSkeleton />}>
+      <ChecklistLoader params={params} />
+    </Suspense>
+  );
+}
+
+async function ChecklistLoader({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const token = (await (await auth()).getToken()) ?? undefined;
   const preloaded = await preloadQuery(api.checklists.get, { id: id as Id<"checklists"> }, { token });
@@ -261,8 +271,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 }
 ```
 
+- Never put a signed-in Convex call inside `'use cache'`: the result would be shared between users. Convex's own subscriptions already keep data fresh.
+
 - `fetchQuery`, `fetchMutation` and `fetchAction` (from `convex/nextjs`) call Convex from Server Components, Server Actions and Route Handlers, non-reactively. Always pass `{ token }` for signed-in calls. Separate `fetchQuery` calls on one page aren't guaranteed to see the same snapshot.
-- `preloadQuery` opts the page out of static rendering. Keep public marketing pages free of it so they stay static.
+- `preloadQuery` reads the request, so it only belongs on signed-in pages. Keep public marketing pages free of it; export `ensureStatic = 'navigation'` from the `(marketing)` layout so the build fails if one slips in.
 - A record ID from the URL is only a string. The function's `v.id()` validator rejects malformed IDs; treat that error as "Not found".
 - **Optimistic updates** (`useMutation(...).withOptimisticUpdate(...)`) for actions that must feel instant, like ticking a box. Don't build a second API layer in Route Handlers or Server Actions for things the client can call Convex for directly.
 
@@ -382,7 +394,7 @@ Vercel builds the Next.js app and, in the same build, deploys the Convex functio
 
 - SEO is for the public pages only: home, pricing, features, legal, and any public share pages. Follow the Next.js metadata conventions (root `metadataBase` and title template, unique title, description and canonical per page, `app/sitemap.ts` and `app/robots.ts`). For a serious marketing site, build it with `blueprint-website`.
 - The signed-in app layout sets `robots: { index: false }`; the sitemap lists only public pages; `robots.ts` disallows `/app` (or whatever the app prefix is).
-- Public pages stay static: no `preloadQuery`, no `cookies()`, no Clerk calls that force request-time rendering.
+- Public pages stay static: no `preloadQuery`, no `cookies()`, no Clerk server calls. `ensureStatic = 'navigation'` on the `(marketing)` layout enforces it.
 - **Analytics:** Vercel Web Analytics (`@vercel/analytics`, cookieless) with a custom event for the magic moment in the core loop and one for a paid conversion. Add a product analytics tool only if the user will actually read funnels; in the UK and EU, cookie-setting tools need consent first.
 - **Accessibility:** shadcn/ui gives accessible primitives; keep labels on every field, visible focus, 4.5:1 text contrast, and full keyboard use of the core loop.
 

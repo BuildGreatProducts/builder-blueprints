@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "builder-blueprints",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Builder Blueprints — skills that help AI builders ship real products: a Next.js website with strong SEO, a Next.js + Convex web app, a React Native mobile app with Convex and RevenueCat, a native SwiftUI iOS app, an AI plugin, a Three.js game with Blender assets, an MCP server, and a Node.js API. Each blueprint interviews you, gives your coding agent the best-practice reference to build from, audits the result against a checklist, and writes a launch guide for what you actually built.",
   "author": { "name": "Chris Ashby", "email": "chris@telescope.design", "url": "https://telescope.design" },
   "homepage": "https://github.com/BuildGreatProducts/builder-blueprints",

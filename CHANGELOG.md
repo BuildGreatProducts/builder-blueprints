@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — October 2026
+
+**Next.js 16.4 in the website and web app blueprints.**
+
+- `blueprint-website`: Cache Components on by default, `ensureStatic = 'navigation'` to keep every page static, `notFound()` instead of `dynamicParams`, CMS data tagged with `cacheTag`
+- `blueprint-web-app`: signed-in server rendering inside `<Suspense>`, `ClerkProvider` inside `<body>`, marketing pages kept static with `ensureStatic`
+
 ## 0.2.0 — October 2026
 
 **Three new app blueprints: web, mobile and native iOS.**
