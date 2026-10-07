@@ -59,7 +59,7 @@ Audit the real app against every item. **[must]** blocks launch. **[should]** is
 
 ## Public pages
 - [ ] **[must]** The signed-in app is `noindex` and absent from the sitemap; the public pages have unique titles, descriptions and canonicals. *Verify: `curl -s <url>/app | grep robots`; `curl -s <url>/sitemap.xml`; curl each public page's `<head>`.*
-- [ ] **[should]** Public pages are prerendered (no `preloadQuery` or per-request APIs). *Verify: the `next build` output marks them static.*
+- [ ] **[should]** Public pages are prerendered: the `(marketing)` layout exports `ensureStatic = 'navigation'`, and they use no `preloadQuery` or per-request APIs. *Verify: read the layout; `next build` passes and its output marks them static.*
 
 ## Operations
 - [ ] **[must]** Vercel's build command is `npx convex deploy --cmd 'npm run build'` with `CONVEX_DEPLOY_KEY` scoped to Production (and a preview key to Preview, if used). *Verify: Vercel → Settings → Build and Deployment, and Environment Variables.*

@@ -7,6 +7,7 @@
 - `blueprint-web-app`: full-stack web apps with Next.js and Convex
 - `blueprint-mobile-app`: iOS and Android apps with Expo, Convex and RevenueCat
 - `blueprint-ios-app`: native iPhone apps with SwiftUI, SwiftData, CloudKit and StoreKit
+- `blueprint-website`: updated for Next.js 16.4 — Cache Components on by default, `ensureStatic` to keep every page static, `notFound()` instead of `dynamicParams`
 
 ## 0.1.0 — October 2026
 

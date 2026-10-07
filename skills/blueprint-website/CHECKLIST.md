@@ -7,6 +7,8 @@ Audit the real site against every item. **[must]** blocks launch. **[should]** i
 - [ ] **[must]** No secrets in the repo or its git history; `.env*.local` is git-ignored; only browser-safe values use `NEXT_PUBLIC_`. *Verify: `git grep -nE "(sk_|api[_-]?key|secret|token|password)"` and review the hits; read `.gitignore`.*
 - [ ] **[must]** Every environment variable the code reads is listed in `.env.example` with a comment. *Verify: `grep -rn "process.env\." app lib components` and compare.*
 - [ ] **[should]** No `middleware.ts` (now renamed `proxy.ts`), and no `proxy.ts` doing work `next.config.ts` redirects could do. *Verify: `ls`, read the file if present.*
+- [ ] **[must]** Cache Components is on (`cacheComponents: true`, `partialPrefetching: true`) and no route exports `dynamic`, `revalidate`, `fetchCache` or `dynamicParams`. *Verify: read `next.config.ts`; `grep -rnE "export const (dynamic|revalidate|fetchCache|dynamicParams)\b" app`.*
+- [ ] **[should]** The root layout exports `ensureStatic = 'navigation'`, or the brief records which route needs request-time rendering and why. *Verify: read `app/layout.tsx`; `next build` passes with it in place.*
 - [ ] **[should]** `'use client'` appears only in small interactive components, never at the top of a `page.tsx` or `layout.tsx`. *Verify: `grep -rln "use client" app`.*
 
 ## Metadata
